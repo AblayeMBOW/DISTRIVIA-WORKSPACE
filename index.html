@@ -382,7 +382,7 @@ function attachListeners(){
   });
   listenWs("ws_tasks", rows=>{ wsTasks=rows; if(view==="tasks"||view==="home") renderMain(); updateBadges(); });
   listenWs("ws_approvals", rows=>{ wsApprovals=rows; if(view==="approvals"||view==="home") renderMain(); updateBadges(); });
-  listenWs("ws_announcements", rows=>{ wsAnnouncements=rows; if(view==="announcements"||view==="home") renderMain(); updateBadges(); });
+  listenWs("ws_announcements", rows=>{ wsAnnouncements=rows; if(view==="announcements"||view==="home"||view==="meeting") renderMain(); updateBadges(); });
   listenWs("ws_leave", rows=>{ wsLeave=rows; if(view==="leave"||view==="home") renderMain(); updateBadges(); });
   listenWs("ws_objectives", rows=>{ wsObjectives=rows; if(view==="objectives"||view==="home") renderMain(); });
   listenWs("ws_presence", rows=>{ wsPresence={}; rows.forEach(r=>wsPresence[r.userId]=r.at); if(view==="team"||view==="messages") renderMain(); });
@@ -602,7 +602,7 @@ function vHome(){
   const myTasksToday = myTasks.filter(tk=>tk.due && tk.due<=today());
   const approvals = wsApprovals.filter(a=>a.status==="pending" && (isAdmin()||a.approver===session.userId));
   const notifs = computeNotifications();
-  const pinnedAnn = [...wsAnnouncements].sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||(b.created<a.created?-1:1)).slice(0,3);
+  const pinnedAnn = wsAnnouncements.filter(a=>a.type!=="meeting").sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||(b.created<a.created?-1:1)).slice(0,3);
   const activeObj = wsObjectives.filter(o=>o.active!==false).slice(0,3);
   return `
   <div class="panel" style="background:linear-gradient(135deg,#0F2A4A,#1B3D63);color:#fff;border:none">
@@ -775,6 +775,23 @@ function bindMessages(){
 window.recallMessage=recallMessage;
 
 /* ============ MESSAGES CLIENTS (réclamations, depuis le portail) ============ */
+/* Résout le nom du client d'un thread (le portail stocke party_name) */
+function threadName(t){
+  if(!t) return "Client";
+  let n = t.party_name || t.client_name || t.clientName || t.name || "";
+  if(!n && t.party_id && gestionState && gestionState.clients){
+    const c = gestionState.clients.find(c=> String(c.id)===String(t.party_id));
+    if(c) n = c.name;
+  }
+  if(!n && (t.party_email||t.client_email) && gestionState && gestionState.clients){
+    const em=(t.party_email||t.client_email).toLowerCase();
+    const c = gestionState.clients.find(c=> c.email && c.email.toLowerCase()===em);
+    if(c) n = c.name;
+  }
+  if(!n){ const em=t.party_email||t.client_email; if(em) n = em.split("@")[0]; }
+  return n || "Client";
+}
+function threadIsSupplier(t){ return (t.kind==="supplier") || String(t._id||"").startsWith("s_"); }
 function vClients(){
   const threads=[...webThreads].sort((a,b)=>((b.updated||b.lastDate||"")<(a.updated||a.lastDate||"")?-1:1));
   const active = threads.find(t=>t._id===activeClientThread) || threads[0] || null;
@@ -786,14 +803,14 @@ function vClients(){
         const last=(t.messages||[])[ (t.messages||[]).length-1 ];
         const unread=t.unreadForAdmin;
         return `<div class="chan ${active&&active._id===t._id?'active':''}" data-cthread="${esc(t._id)}" style="align-items:flex-start;flex-direction:column;gap:2px">
-          <div style="display:flex;align-items:center;gap:8px;width:100%"><span class="avatar sm">${initials(t.client_name||"C")}</span><b style="flex:1;font-size:13px">${esc(t.client_name||"Client")}</b>${unread?`<span class="badge">●</span>`:""}</div>
+          <div style="display:flex;align-items:center;gap:8px;width:100%"><span class="avatar sm">${initials(threadName(t))}</span><b style="flex:1;font-size:13px">${esc(threadName(t))}</b>${unread?`<span class="badge">●</span>`:""}</div>
           <div class="muted" style="font-size:11px;padding-left:36px;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc((last?last.text:"")||"")}</div>
         </div>`;
       }).join("") : `<div class="empty" style="padding:18px;font-size:13px">Aucune conversation client pour l'instant.<br><br>Les messages envoyés depuis le portail clients apparaîtront ici.</div>`}
     </div>
     <div class="chat-main">
       ${active?`
-        <div class="chat-head"><span class="avatar sm">${initials(active.client_name||"C")}</span> ${esc(active.client_name||"Client")} <span class="muted" style="font-size:12px;font-weight:400">· réclamation / message client</span></div>
+        <div class="chat-head"><span class="avatar sm">${initials(threadName(active))}</span> ${esc(threadName(active))} <span class="muted" style="font-size:12px;font-weight:400">· ${threadIsSupplier(active)?"fournisseur":"réclamation / message client"}</span></div>
         <div class="chat-body" id="cl-body"></div>
         <div class="chat-input">
           <textarea id="cl-input" rows="1" placeholder="Répondre au client…"></textarea>
@@ -809,7 +826,7 @@ function renderClientBody(){
   b.innerHTML = msgs.length? msgs.map(m=>{
     const fromStaff = m.from==="DISTRIVIA";
     return `<div class="msg ${fromStaff?'mine':''}">
-      ${fromStaff?"":`<div class="avatar sm">${initials(t.client_name||"C")}</div>`}
+      ${fromStaff?"":`<div class="avatar sm">${initials(threadName(t))}</div>`}
       <div class="bubble">${fromStaff&&m.by?`<div class="who">${esc(m.by)}</div>`:""}<div class="txt">${esc(m.text)}</div><div class="tm">${clockHM(m.date)}</div></div>
     </div>`;
   }).join("") : `<div class="empty">Aucun message.</div>`;
@@ -833,80 +850,75 @@ function bindClients(){
   if(inp) inp.onkeydown=e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); doSend(); } };
 }
 
-/* ============ SALLE DE RÉUNION (visio/audio/partage écran via Jitsi) ============ */
-let jitsiApi=null;
+/* ============ SALLE DE RÉUNION (Google Meet) ============ */
+// Les réunions partagées sont stockées dans ws_announcements (type:"meeting")
+// => aucune nouvelle collection / règle Firestore nécessaire.
+function activeMeetings(){
+  return wsAnnouncements
+    .filter(a=>a.type==="meeting" && a.meetingUrl)
+    .sort((a,b)=>(b.created<a.created?-1:1));
+}
 function vMeeting(){
+  const meetings=activeMeetings();
   return `
   <div class="meet-hero">
-    <h2 style="font-size:22px;margin-bottom:6px">Salle de réunion DISTRIVIA</h2>
-    <p style="color:#C9D4E2;max-width:640px">Lancez une réunion vidéo d'équipe : caméra, micro, partage d'écran et discussion. Invitez vos collègues en partageant simplement le nom de la salle.</p>
+    <h2 style="font-size:22px;margin-bottom:6px">Salle de réunion</h2>
+    <p style="color:#C9D4E2;max-width:680px">Lancez une réunion <b>Google Meet</b> (vidéo, audio, partage d'écran) puis partagez le lien à votre équipe en un clic. Tout le monde rejoint la même réunion.</p>
   </div>
-  <div id="meet-launch">
-    <div class="grid g2">
-      <div class="meet-card" data-room="DISTRIVIA-Equipe">
-        <div class="meet-ic">${icon('users',24)}</div>
-        <div><div style="font-weight:700">Réunion d'équipe</div><div class="muted" style="font-size:13px">Salle permanente pour toute l'équipe DISTRIVIA</div></div>
-      </div>
-      <div class="meet-card" data-room="DISTRIVIA-Direction">
-        <div class="meet-ic">${icon('video',24)}</div>
-        <div><div style="font-weight:700">Réunion direction</div><div class="muted" style="font-size:13px">Salle pour les responsables</div></div>
-      </div>
+
+  <div class="panel">
+    <h3>${icon('video',16)} Démarrer une réunion</h3>
+    <ol style="margin:6px 0 14px 18px;color:#444;font-size:13.5px;line-height:1.9">
+      <li>Cliquez sur <b>« Ouvrir Google Meet »</b> — une nouvelle réunion s'ouvre dans un onglet.</li>
+      <li>Dans Google Meet, copiez le lien de la réunion (ex. <span class="muted">meet.google.com/abc-defg-hij</span>).</li>
+      <li>Collez-le ci-dessous et cliquez <b>« Partager à l'équipe »</b> : vos collègues le verront ici et pourront rejoindre.</li>
+    </ol>
+    <div class="row">
+      <a class="btn b" href="https://meet.google.com/new" target="_blank" rel="noopener" style="text-decoration:none">${icon('video',16)} Ouvrir Google Meet</a>
     </div>
-    <div class="panel" style="margin-top:16px">
-      <h3>${icon('plus',16)} Salle personnalisée</h3>
+    <div style="margin-top:14px">
+      <label>Lien de la réunion Google Meet</label>
       <div class="row">
-        <input id="meet-room" placeholder="Nom de la salle (ex. Point-logistique-lundi)" style="flex:1;min-width:200px">
-        <button class="btn b" id="meet-go">${icon('video',16)} Démarrer / Rejoindre</button>
+        <input id="meet-url" placeholder="https://meet.google.com/xxx-xxxx-xxx" style="flex:1;min-width:220px">
+        <input id="meet-label" placeholder="Sujet (facultatif)" style="flex:1;min-width:160px">
+        <button class="btn" id="meet-share">${icon('send',16)} Partager à l'équipe</button>
       </div>
-      <p class="muted" style="font-size:12px;margin-top:8px">Astuce : partagez exactement le même nom de salle à vos collègues pour vous retrouver dans la même réunion.</p>
+      <p class="muted" style="font-size:12px;margin-top:6px">Astuce : vous pouvez aussi coller un lien Meet créé depuis votre agenda Google.</p>
     </div>
-    <p class="muted" style="font-size:12px;margin-top:12px">La salle de réunion utilise la technologie Jitsi (chiffrée, sans installation). Autorisez l'accès à votre caméra et micro quand votre navigateur le demande.</p>
   </div>
-  <div id="meet-room-wrap" style="display:none">
-    <div class="row" style="justify-content:space-between;margin-bottom:10px">
-      <h3 style="color:var(--bleu)" id="meet-title"></h3>
-      <button class="btn r" id="meet-leave">${icon('phone',16)} Quitter la réunion</button>
-    </div>
-    <div id="jitsi-container" class="meet-frame"></div>
-  </div>`;
+
+  <div class="panel">
+    <h3>${icon('users',16)} Réunions en cours (${meetings.length})</h3>
+    ${meetings.length? meetings.map(m=>`
+      <div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #f1ede2">
+        <div class="meet-ic" style="width:40px;height:40px">${icon('video',20)}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:14px">${esc(m.title||"Réunion Google Meet")}</div>
+          <div class="muted" style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.meetingUrl)} · lancée par ${esc(userName(m.author))} · ${timeAgo(m.created)}</div>
+        </div>
+        <a class="btn v sm" href="${esc(m.meetingUrl)}" target="_blank" rel="noopener" style="text-decoration:none">${icon('video',14)} Rejoindre</a>
+        ${(m.author===session.userId||isAdmin())?`<button class="btn r sm" data-meetend="${m._id}">${icon('x',14)} Terminer</button>`:""}
+      </div>`).join("") : `<p class="empty">Aucune réunion en cours. Démarrez-en une ci-dessus.</p>`}
+  </div>
+  <p class="muted" style="font-size:12px">Google Meet est gratuit avec un compte Google. Le partage d'écran et la vidéo se gèrent directement dans la fenêtre Meet.</p>`;
 }
 function bindMeeting(){
-  document.querySelectorAll("[data-room]").forEach(c=> c.onclick=()=> startMeeting(c.dataset.room));
-  const go=el("meet-go"); if(go) go.onclick=()=>{ const r=(el("meet-room").value||"").trim().replace(/[^a-zA-Z0-9\-]/g,"-"); if(!r) return toast("Nom de salle requis"); startMeeting("DISTRIVIA-"+r); };
-  const leave=el("meet-leave"); if(leave) leave.onclick=leaveMeeting;
-}
-function loadJitsi(){
-  return new Promise((resolve,reject)=>{
-    if(window.JitsiMeetExternalAPI) return resolve();
-    const s=document.createElement("script"); s.src="https://meet.jit.si/external_api.js";
-    s.onload=()=>resolve(); s.onerror=()=>reject(new Error("Impossible de charger la salle de réunion (vérifiez votre connexion)."));
-    document.head.appendChild(s);
-  });
-}
-async function startMeeting(room){
-  el("meet-launch").style.display="none";
-  el("meet-room-wrap").style.display="block";
-  el("meet-title").textContent = "Réunion : "+room.replace(/^DISTRIVIA-/,"");
-  try{
-    await loadJitsi();
-    const domain="meet.jit.si";
-    const container=el("jitsi-container"); container.innerHTML="";
-    jitsiApi = new window.JitsiMeetExternalAPI(domain, {
-      roomName: room,
-      parentNode: container,
-      width:"100%", height:"100%",
-      userInfo:{ displayName: session.name },
-      configOverwrite:{ prejoinPageEnabled:true, disableDeepLinking:true },
-      interfaceConfigOverwrite:{ MOBILE_APP_PROMO:false, SHOW_JITSI_WATERMARK:false, DEFAULT_BACKGROUND:"#0F2A4A" }
-    });
-    jitsiApi.addEventListener("readyToClose", leaveMeeting);
-  }catch(e){
-    el("jitsi-container").innerHTML=`<div style="color:#fff;text-align:center;padding:60px 20px"><p>${esc(e.message)}</p><p style="opacity:.7;font-size:13px;margin-top:8px">Vous pouvez aussi ouvrir la salle directement : <a href="https://meet.jit.si/${esc(room)}" target="_blank" style="color:#E0764A">meet.jit.si/${esc(room)}</a></p></div>`;
-  }
-}
-function leaveMeeting(){
-  try{ if(jitsiApi){ jitsiApi.dispose(); jitsiApi=null; } }catch(e){}
-  if(view==="meeting") renderMain();
+  const share=el("meet-share");
+  if(share) share.onclick=async ()=>{
+    let url=(el("meet-url").value||"").trim();
+    if(!url){ return toast("Collez d'abord le lien Google Meet"); }
+    // tolère un code seul ou une URL sans https
+    if(/^[a-z]{3}-[a-z]{4}-[a-z]{3}$/i.test(url)) url="https://meet.google.com/"+url;
+    if(!/^https?:\/\//i.test(url)) url="https://"+url;
+    if(!/meet\.google\.com/i.test(url)){ return toast("Ce lien ne ressemble pas à un lien Google Meet"); }
+    const title=(el("meet-label").value||"").trim() || ("Réunion de "+session.name.split(" ")[0]);
+    try{
+      await wsAdd("ws_announcements", { id:uid(), type:"meeting", meetingUrl:url, title, author:session.userId, created:nowISO() });
+      toast("Réunion partagée à l'équipe ✓");
+      el("meet-url").value=""; el("meet-label").value="";
+    }catch(e){ toast("Échec du partage"); }
+  };
+  document.querySelectorAll("[data-meetend]").forEach(b=> b.onclick=()=> confirmDialog("Terminer cette réunion ? Le lien sera retiré de la liste.", async ()=>{ await wsDelete("ws_announcements", b.dataset.meetend); toast("Réunion terminée"); }, {ok:"Terminer", danger:true}));
 }
 
 
@@ -1058,7 +1070,7 @@ function bindApprovals(){
 
 /* ============ ANNONCES ============ */
 function vAnnouncements(){
-  const list=[...wsAnnouncements].sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||(b.created<a.created?-1:1));
+  const list=wsAnnouncements.filter(a=>a.type!=="meeting").sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||(b.created<a.created?-1:1));
   return `
   ${isAdmin()?`<div class="row" style="justify-content:flex-end;margin-bottom:14px"><button class="btn b" id="ann-new">+ Nouvelle annonce</button></div>`:""}
   ${list.length? list.map(a=>`<div class="panel" style="${a.pinned?'border-left:4px solid var(--terra)':''}">
