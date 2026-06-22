@@ -157,6 +157,29 @@
   .notif-item .tx{flex:1; font-size:13.5px;}
   .notif-item .tx b{color:var(--bleu);}
   .notif-item.urgent .ic{color:var(--rouge);}
+  .sound-toggle{display:flex;align-items:center;gap:8px;width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#C9D4E2;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:600;cursor:pointer;margin-bottom:10px;}
+  .sound-toggle:hover{background:rgba(255,255,255,.12);}
+  .icon-btn{position:relative;background:none;border:none;cursor:pointer;color:var(--bleu);padding:6px;border-radius:8px;display:flex;align-items:center;}
+  .icon-btn:hover{background:var(--creme);}
+  .ibadge{position:absolute;top:0;right:0;background:var(--terra);color:#fff;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px;}
+  /* reply preview + message actions (style Outlook) */
+  .reply-preview{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#EDF2F8;border-left:3px solid var(--terra);border-radius:8px;margin:0 16px 8px;font-size:12.5px;}
+  .reply-preview .rp-txt{flex:1;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .reply-preview .rp-x{cursor:pointer;color:var(--gris);}
+  .msg{position:relative;}
+  .msg .actions{position:absolute;top:-10px;${''}display:none;gap:2px;background:#fff;border:1px solid #e5e0d2;border-radius:18px;padding:2px;box-shadow:var(--ombre);}
+  .msg:hover .actions{display:flex;}
+  .msg.mine .actions{right:42px;} .msg:not(.mine) .actions{left:42px;}
+  .msg .actions button{background:none;border:none;cursor:pointer;color:var(--gris);padding:4px 6px;border-radius:50%;}
+  .msg .actions button:hover{background:var(--creme);color:var(--bleu);}
+  .msg .quoted{font-size:12px;border-left:2px solid currentColor;opacity:.75;padding:2px 8px;margin-bottom:4px;}
+  .msg.recalled .txt{font-style:italic;opacity:.6;}
+  /* salle de réunion */
+  .meet-hero{background:linear-gradient(135deg,#0F2A4A,#26517f);color:#fff;border-radius:14px;padding:26px;margin-bottom:16px;}
+  .meet-frame{width:100%;height:calc(100vh - 220px);min-height:420px;border:none;border-radius:14px;overflow:hidden;background:#000;}
+  .meet-card{background:#fff;border-radius:12px;padding:16px;box-shadow:var(--ombre);display:flex;align-items:center;gap:14px;cursor:pointer;border:1px solid #efe9db;transition:.15s;}
+  .meet-card:hover{box-shadow:var(--ombre2);transform:translateY(-2px);}
+  .meet-ic{width:48px;height:48px;border-radius:12px;background:var(--creme);color:var(--bleu);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 
   @media(max-width:860px){
     .sidebar{transform:translateX(-100%);}
@@ -259,14 +282,53 @@ let wsAnnouncements = [];
 let wsLeave = [];
 let wsObjectives = [];
 let wsPresence = {};          // {userId: lastSeenISO}
+let webThreads = [];          // portal_threads : messages/réclamations des clients
+let soundOn = (function(){ try{ return localStorage.getItem("distrivia-ws-sound")!=="0"; }catch(e){ return true; } })();
+let activeClientThread = null;
+let replyTo = null;           // message auquel on répond (style Outlook)
 let currentChannel = "general";
 const CHANNELS = [
-  {id:"general", name:"général", emoji:"📢"},
-  {id:"logistique", name:"logistique", emoji:"🚚"},
-  {id:"ventes", name:"ventes", emoji:"💼"},
-  {id:"compta", name:"comptabilité", emoji:"🧮"},
-  {id:"direction", name:"direction", emoji:"⭐"},
+  {id:"general", name:"général"},
+  {id:"logistique", name:"logistique"},
+  {id:"ventes", name:"ventes"},
+  {id:"compta", name:"comptabilité"},
+  {id:"direction", name:"direction"},
 ];
+// Icônes SVG monochromes (look corporate, sans emoji)
+function icon(name, size){
+  const s=size||18;
+  const P={
+    home:'<path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/>',
+    chat:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+    task:'<path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+    approve:'<path d="M9 12l2 2 4-4M12 3l7 4v5c0 4-3 7-7 9-4-2-7-5-7-9V7z"/>',
+    megaphone:'<path d="M3 11v2a1 1 0 0 0 1 1h2l4 4V6L6 10H4a1 1 0 0 0-1 1zM14 8a4 4 0 0 1 0 8M17 5a8 8 0 0 1 0 14"/>',
+    target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/>',
+    leave:'<path d="M12 2C8 6 6 9 6 13a6 6 0 0 0 12 0c0-4-2-7-6-11zM12 22v-6"/>',
+    users:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5M16 5.5a3 3 0 0 1 0 5.4M22 20c0-2.4-1.6-4.2-4-4.8"/>',
+    bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>',
+    video:'<rect x="2.5" y="6" width="13" height="12" rx="2"/><path d="M16 10l5.5-3v10L16 14z"/>',
+    inbox:'<path d="M3 12h5l2 3h4l2-3h5M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/>',
+    send:'<path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/>',
+    reply:'<path d="M9 17l-5-5 5-5M4 12h11a5 5 0 0 1 5 5v2"/>',
+    recall:'<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>',
+    plus:'<path d="M12 5v14M5 12h14"/>',
+    pin:'<path d="M12 17v5M9 3h6l-1 6 3 3v2H7v-2l3-3z"/>',
+    clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    box:'<path d="M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8M12 13v8"/>',
+    money:'<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/>',
+    check:'<path d="M20 6L9 17l-5-5"/>',
+    x:'<path d="M18 6L6 18M6 6l12 12"/>',
+    edit:'<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+    screen:'<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>',
+    mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+    phone:'<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8.1 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/>',
+    settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 0 1-4 0v-.1A1.6 1.6 0 0 0 7 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H1a2 2 0 0 1 0-4h.1A1.6 1.6 0 0 0 2.6 7a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H7a1.6 1.6 0 0 0 1-1.5V1a2 2 0 0 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1 1.6 1.6 0 0 0 .3-1.8l-.1-.1"/>',
+    soundon:'<path d="M11 5L6 9H2v6h4l5 4V5zM15.5 8.5a5 5 0 0 1 0 7M19 5a9 9 0 0 1 0 14"/>',
+    soundoff:'<path d="M11 5L6 9H2v6h4l5 4V5zM22 9l-6 6M16 9l6 6"/>',
+  };
+  return `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle">${P[name]||""}</svg>`;
+}
 let dmWith = null;            // userId si on est dans une conversation privée
 
 try{ const s=localStorage.getItem("distrivia-ws-session"); if(s) session=JSON.parse(s); }catch(e){}
@@ -309,19 +371,52 @@ function startPresence(){ beat(); clearInterval(presenceTimer); presenceTimer=se
 let listenersAttached = false;
 function attachListeners(){
   if(listenersAttached || !FB_OK) return; listenersAttached = true;
-  listenWs("ws_messages", rows=>{ wsMessages=rows; if(view==="messages") renderChatBody(); updateBadges(); });
+  let firstMsgs=true;
+  listenWs("ws_messages", rows=>{
+    const prevIds=new Set(wsMessages.map(m=>m._id));
+    const incoming = rows.filter(m=>!prevIds.has(m._id) && m.from!==session.userId);
+    wsMessages=rows;
+    if(!firstMsgs && incoming.length){ notifySound(); }
+    firstMsgs=false;
+    if(view==="messages") renderChatBody(); updateBadges();
+  });
   listenWs("ws_tasks", rows=>{ wsTasks=rows; if(view==="tasks"||view==="home") renderMain(); updateBadges(); });
   listenWs("ws_approvals", rows=>{ wsApprovals=rows; if(view==="approvals"||view==="home") renderMain(); updateBadges(); });
   listenWs("ws_announcements", rows=>{ wsAnnouncements=rows; if(view==="announcements"||view==="home") renderMain(); updateBadges(); });
   listenWs("ws_leave", rows=>{ wsLeave=rows; if(view==="leave"||view==="home") renderMain(); updateBadges(); });
   listenWs("ws_objectives", rows=>{ wsObjectives=rows; if(view==="objectives"||view==="home") renderMain(); });
   listenWs("ws_presence", rows=>{ wsPresence={}; rows.forEach(r=>wsPresence[r.userId]=r.at); if(view==="team"||view==="messages") renderMain(); });
+  // Messages / réclamations clients venant du portail (portal_threads)
+  let firstThreads=true;
+  listenWs("portal_threads", rows=>{
+    const prevUnread = webThreads.reduce((a,t)=>a+(t.unreadForAdmin?1:0),0);
+    webThreads=rows;
+    const newUnread = webThreads.reduce((a,t)=>a+(t.unreadForAdmin?1:0),0);
+    if(!firstThreads && newUnread>prevUnread){ notifySound(); }
+    firstThreads=false;
+    if(view==="clients"||view==="home") renderMain();
+    updateBadges();
+  });
 }
+
+/* ============ SON DE NOTIFICATION ============ */
+let _audioCtx=null;
+function playBeep(){
+  try{
+    _audioCtx = _audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+    const ctx=_audioCtx, t=ctx.currentTime;
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.type="sine"; o.frequency.setValueAtTime(880,t); o.frequency.setValueAtTime(660,t+0.12);
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.25,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+0.32);
+    o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t+0.34);
+  }catch(e){}
+}
+function notifySound(){ if(soundOn) playBeep(); }
 
 /* ============ LOGIN (mêmes comptes que Gestion) ============ */
 function vLogin(){
   return `<div class="login-wrap"><div class="login-card">
-    <div class="login-logo"><div class="wm">DISTRIVIA</div><div class="bar"></div><div class="sub">DISTRIBUTION GROUP</div><div class="ws">⚡ WORKSPACE</div></div>
+    <div class="login-logo"><div class="wm">DISTRIVIA</div><div class="bar"></div><div class="sub">DISTRIBUTION GROUP</div><div class="ws">WORKSPACE</div></div>
     <p class="muted" style="text-align:center;font-size:13px;margin-bottom:6px">Espace de travail interne de l'équipe</p>
     <label>Identifiant</label><input id="lg-login" placeholder="Ex. ablaye" autocomplete="username">
     <label>Mot de passe</label><input id="lg-pass" type="password" autocomplete="current-password">
@@ -370,7 +465,7 @@ function computeNotifications(){
   const out=[];
   const S = gestionState||{};
   // stock bas
-  (S.products||[]).forEach(p=>{ if(p.stock<=(p.alert||0)){ out.push({ic:"📦", urgent:p.stock<=0, txt:`Stock ${p.stock<=0?"épuisé":"bas"} : <b>${esc(p.name)}</b> (${p.stock} en stock)`, go:"notifications"}); } });
+  (S.products||[]).forEach(p=>{ if(p.stock<=(p.alert||0)){ out.push({ic:icon("box",18), urgent:p.stock<=0, txt:`Stock ${p.stock<=0?"épuisé":"bas"} : <b>${esc(p.name)}</b> (${p.stock} en stock)`, go:"notifications"}); } });
   // commandes web en attente
   // (les commandes web vivent dans portal_orders, pas dans le blob — on compte via Gestion si présent)
   // factures impayées anciennes (>15 j)
@@ -380,13 +475,13 @@ function computeNotifications(){
     const total=(o.lines||[]).reduce((a,l)=>a+l.qty*l.price,0);
     if(total-paid>0 && o.date){
       const days=Math.floor((Date.now()-new Date(o.date).getTime())/86400000);
-      if(days>=15) out.push({ic:"💰", urgent:days>=30, txt:`Facture <b>${esc(o.invoiceNum)}</b> impayée depuis ${days} j — reste ${(total-paid).toLocaleString("fr-FR").replace(/[\s\u202f\u00a0]/g," ")} F`, go:"notifications"});
+      if(days>=15) out.push({ic:icon("money",18), urgent:days>=30, txt:`Facture <b>${esc(o.invoiceNum)}</b> impayée depuis ${days} j — reste ${(total-paid).toLocaleString("fr-FR").replace(/[\s\u202f\u00a0]/g," ")} F`, go:"notifications"});
     }
   });
   // tâches en retard qui me concernent
   wsTasks.forEach(tk=>{
     if(tk.status!=="done" && tk.due && tk.due<today()){
-      out.push({ic:"⏰", urgent:true, txt:`Tâche en retard : <b>${esc(tk.title)}</b> (${userName(tk.assignee)})`, go:"tasks"});
+      out.push({ic:icon("clock",18), urgent:true, txt:`Tâche en retard : <b>${esc(tk.title)}</b> (${userName(tk.assignee)})`, go:"tasks"});
     }
   });
   return out;
@@ -414,22 +509,27 @@ function updateBadges(){
   set("messages", unreadCount());
   set("tasks", myTasksTodo());
   set("approvals", pendingApprovals());
-  set("notifications", computeNotifications().filter(x=>x.urgent).length);
+  set("clients", webThreads.filter(t=>t.unreadForAdmin).length);
+  const urgent = computeNotifications().filter(x=>x.urgent).length;
+  set("notifications", urgent);
+  const tb=el("top-bell-badge"); if(tb){ const n=computeNotifications().length; if(n>0){ tb.textContent=n; tb.style.display=""; } else tb.style.display="none"; }
 }
 
 /* ============ RENDER (shell) ============ */
 const NAV = [
-  ["home","Accueil","🏠"],
-  ["messages","Messagerie","💬"],
-  ["tasks","Tâches","✅"],
-  ["approvals","Validations","🔏"],
-  ["announcements","Annonces","📣"],
-  ["objectives","Objectifs","🎯"],
-  ["leave","Congés","🌴"],
-  ["team","Annuaire","👥"],
-  ["notifications","Notifications","🔔"],
+  ["home","Accueil","home"],
+  ["messages","Messagerie","chat"],
+  ["clients","Clients","inbox"],
+  ["meeting","Salle de réunion","video"],
+  ["tasks","Tâches","task"],
+  ["approvals","Validations","approve"],
+  ["announcements","Annonces","megaphone"],
+  ["objectives","Objectifs","target"],
+  ["leave","Congés","leave"],
+  ["team","Annuaire","users"],
+  ["notifications","Notifications","bell"],
 ];
-const VIEW_TITLES = {home:"Accueil",messages:"Messagerie d'équipe",tasks:"Tâches",approvals:"Validations & approbations",announcements:"Annonces internes",objectives:"Objectifs d'équipe",leave:"Congés & absences",team:"Annuaire de l'équipe",notifications:"Notifications"};
+const VIEW_TITLES = {home:"Accueil",messages:"Messagerie d'équipe",clients:"Messages clients",meeting:"Salle de réunion",tasks:"Tâches",approvals:"Validations & approbations",announcements:"Annonces internes",objectives:"Objectifs d'équipe",leave:"Congés & absences",team:"Annuaire de l'équipe",notifications:"Notifications"};
 
 function render(){
   const root=el("root");
@@ -437,26 +537,29 @@ function render(){
   root.innerHTML = `
   <div class="shell">
     <aside class="sidebar ${sbOpen?'open':''}" id="sidebar">
-      <div class="sb-logo"><div class="wm">DISTRIVIA</div><div class="bar"></div><div class="sub">⚡ WORKSPACE</div></div>
+      <div class="sb-logo"><div class="wm">DISTRIVIA</div><div class="bar"></div><div class="sub">WORKSPACE</div></div>
       <nav class="sb-nav">
-        ${NAV.map(n=>`<button data-nav="${n[0]}" class="${view===n[0]?'active':''}"><span class="ico">${n[2]}</span>${n[1]}<span class="badge" id="badge-${n[0]}" style="display:none"></span></button>`).join("")}
+        ${NAV.map(n=>`<button data-nav="${n[0]}" class="${view===n[0]?'active':''}"><span class="ico">${icon(n[2])}</span>${n[1]}<span class="badge" id="badge-${n[0]}" style="display:none"></span></button>`).join("")}
       </nav>
       <div class="sb-foot">
+        <button class="sound-toggle" id="sound-toggle" title="Son des notifications">${icon(soundOn?'soundon':'soundoff',16)} <span>${soundOn?"Son activé":"Son coupé"}</span></button>
         <div class="who"><div class="avatar sm">${initials(session.name)}</div><div><div style="font-weight:700;font-size:13px">${esc(session.name)}</div><div style="color:#9FB2C9;font-size:11px">${session.role==="admin"?"Administrateur":"Employé"}</div></div></div>
         <button class="btn ghost sm full" onclick="logout()">Déconnexion</button>
       </div>
     </aside>
     <div class="main">
       <div class="topbar">
-        <button class="menu-btn" onclick="toggleSb()">☰</button>
+        <button class="menu-btn" onclick="toggleSb()">&#9776;</button>
         <h2 id="view-title">${VIEW_TITLES[view]||""}</h2>
         <div class="sp"></div>
+        <button class="icon-btn" id="top-bell" title="Notifications" onclick="goView('notifications')">${icon('bell',20)}<span class="ibadge" id="top-bell-badge" style="display:none"></span></button>
         <div class="avatar sm" title="${esc(session.name)}">${initials(session.name)}</div>
       </div>
       <div class="content" id="content"></div>
     </div>
   </div>`;
   document.querySelectorAll("[data-nav]").forEach(b=> b.onclick = ()=>{ view=b.dataset.nav; sbOpen=false; render(); });
+  const st=el("sound-toggle"); if(st) st.onclick=()=>{ soundOn=!soundOn; try{localStorage.setItem("distrivia-ws-sound", soundOn?"1":"0");}catch(e){} if(soundOn) playBeep(); render(); };
   renderMain();
   updateBadges();
 }
@@ -468,6 +571,8 @@ function renderMain(){
   const t=el("view-title"); if(t) t.textContent=VIEW_TITLES[view]||"";
   if(view==="home"){ c.innerHTML=vHome(); bindHomeQuick(); }
   else if(view==="messages"){ c.innerHTML=vMessages(); bindMessages(); }
+  else if(view==="clients"){ c.innerHTML=vClients(); bindClients(); }
+  else if(view==="meeting"){ c.innerHTML=vMeeting(); bindMeeting(); }
   else if(view==="tasks"){ c.innerHTML=vTasks(); bindTasks(); }
   else if(view==="approvals"){ c.innerHTML=vApprovals(); bindApprovals(); }
   else if(view==="announcements"){ c.innerHTML=vAnnouncements(); bindAnnouncements(); }
@@ -501,7 +606,7 @@ function vHome(){
   const activeObj = wsObjectives.filter(o=>o.active!==false).slice(0,3);
   return `
   <div class="panel" style="background:linear-gradient(135deg,#0F2A4A,#1B3D63);color:#fff;border:none">
-    <h2 style="font-size:22px;margin-bottom:4px">${greet}, ${esc(session.name.split(" ")[0])} 👋</h2>
+    <h2 style="font-size:22px;margin-bottom:4px">${greet}, ${esc(session.name.split(" ")[0])}</h2>
     <p style="color:#C9D4E2">Voici ton récapitulatif du ${frDate(today())}.</p>
   </div>
   <div class="grid g4" style="margin-bottom:16px">
@@ -512,38 +617,38 @@ function vHome(){
   </div>
   <div class="grid g2">
     <div>
-      <div class="panel"><h3>✅ Mes tâches prioritaires</h3>
+      <div class="panel"><h3>${icon("task")} Mes tâches prioritaires</h3>
         ${myTasks.length? myTasks.slice(0,6).map(tk=>{
           const late = tk.due && tk.due<today();
           return `<div style="display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid #f1ede2">
             <span class="pill ${tk.priority||'low'}">${prioLabel(tk.priority)}</span>
             <div style="flex:1"><div style="font-weight:600;font-size:13.5px">${esc(tk.title)}</div>${tk.due?`<div class="due ${late?'late':''}" style="font-size:11px;color:${late?'var(--rouge)':'var(--gris)'}">${late?'⏰ en retard — ':''}échéance ${frDate(tk.due)}</div>`:""}</div>
           </div>`;
-        }).join("") : `<p class="empty">Aucune tâche en cours. 🎉</p>`}
+        }).join("") : `<p class="empty">Aucune tâche en cours.</p>`}
         ${myTasks.length?`<button class="btn ghost sm full" style="margin-top:10px" onclick="goView('tasks')">Voir toutes mes tâches</button>`:""}
       </div>
-      ${approvals.length?`<div class="panel"><h3>🔏 À valider</h3>
+      ${approvals.length?`<div class="panel"><h3>${icon("approve")} À valider</h3>
         ${approvals.slice(0,4).map(a=>`<div style="display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid #f1ede2">
           <div style="flex:1"><div style="font-weight:600;font-size:13.5px">${esc(a.title)}</div><div class="muted" style="font-size:11px">Demandé par ${esc(userName(a.requester))} · ${timeAgo(a.created)}</div></div>
-          <button class="btn v sm" data-quickok="${a._id}">✓</button><button class="btn r sm" data-quickno="${a._id}">✕</button>
+          <button class="btn v sm" data-quickok="${a._id}">${icon("check",14)}</button><button class="btn r sm" data-quickno="${a._id}">${icon("x",14)}</button>
         </div>`).join("")}
         <button class="btn ghost sm full" style="margin-top:10px" onclick="goView('approvals')">Voir toutes les validations</button>
       </div>`:""}
     </div>
     <div>
-      ${pinnedAnn.length?`<div class="panel"><h3>📣 Annonces</h3>
+      ${pinnedAnn.length?`<div class="panel"><h3>${icon("megaphone")} Annonces</h3>
         ${pinnedAnn.map(a=>`<div style="padding:9px 0;border-bottom:1px solid #f1ede2">
-          <div style="font-weight:700;font-size:13.5px;color:var(--bleu)">${a.pinned?"📌 ":""}${esc(a.title)}</div>
+          <div style="font-weight:700;font-size:13.5px;color:var(--bleu)">${a.pinned?icon("pin",13)+" ":""}${esc(a.title)}</div>
           <div style="font-size:13px;color:#555;margin-top:2px">${esc((a.body||"").slice(0,120))}${(a.body||"").length>120?"…":""}</div>
           <div class="muted" style="font-size:11px;margin-top:3px">${esc(userName(a.author))} · ${timeAgo(a.created)}</div>
         </div>`).join("")}
       </div>`:""}
-      ${activeObj.length?`<div class="panel"><h3>🎯 Objectifs</h3>
+      ${activeObj.length?`<div class="panel"><h3>${icon("target")} Objectifs</h3>
         ${activeObj.map(o=>{ const pct=o.target>0?Math.min(100,Math.round(o.current/o.target*100)):0; const cls=pct>=80?"":pct>=40?"warn":"bad";
           return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><b>${esc(o.title)}</b><span class="muted">${pct}%</span></div><div class="prog ${cls}"><i style="width:${pct}%"></i></div></div>`;
         }).join("")}
       </div>`:""}
-      ${notifs.length?`<div class="panel"><h3>🔔 Alertes récentes</h3>
+      ${notifs.length?`<div class="panel"><h3>${icon("bell")} Alertes récentes</h3>
         ${notifs.slice(0,5).map(n=>`<div class="notif-item ${n.urgent?'urgent':''}"><div class="ic">${n.ic}</div><div class="tx">${n.txt}</div></div>`).join("")}
       </div>`:""}
     </div>
@@ -566,9 +671,9 @@ function vMessages(){
   return `<div class="chat-shell">
     <div class="chat-side">
       <div class="sec">Canaux</div>
-      ${CHANNELS.filter(ch=>ch.id!=="direction"||isAdmin()||true).map(ch=>{
+      ${CHANNELS.map(ch=>{
         const unread = chanUnread(ch.id);
-        return `<div class="chan ${!dmWith&&currentChannel===ch.id?'active':''}" data-chan="${ch.id}"><span>${ch.emoji}</span>#${ch.name}${unread?`<span class="badge">${unread}</span>`:""}</div>`;
+        return `<div class="chan ${!dmWith&&currentChannel===ch.id?'active':''}" data-chan="${ch.id}"><span style="color:var(--gris);font-weight:800">#</span>${ch.name}${unread?`<span class="badge">${unread}</span>`:""}</div>`;
       }).join("")}
       <div class="sec">Messages privés</div>
       ${others.map(u=>{
@@ -579,9 +684,10 @@ function vMessages(){
     <div class="chat-main">
       <div class="chat-head" id="chat-head"></div>
       <div class="chat-body" id="chat-body"></div>
+      <div id="reply-zone"></div>
       <div class="chat-input">
         <textarea id="msg-input" rows="1" placeholder="Votre message…"></textarea>
-        <button class="btn" id="msg-send">Envoyer</button>
+        <button class="btn" id="msg-send">${icon('send',16)} Envoyer</button>
       </div>
     </div>
   </div>`;
@@ -604,47 +710,210 @@ function markRead(key){ try{ const o=JSON.parse(localStorage.getItem("distrivia-
 function renderChatHead(){
   const h=el("chat-head"); if(!h) return;
   if(dmWith){ const u=userById(dmWith); const on=(Date.now()-new Date(wsPresence[dmWith]||0).getTime())<180000; h.innerHTML=`<span class="avatar sm">${initials(u?u.name:"?")}</span> ${esc(u?u.name:"")} <span class="dot ${on?'on':'off'}"></span> <span class="muted" style="font-size:12px;font-weight:400">${on?"en ligne":"hors ligne"}</span>`; }
-  else { const ch=CHANNELS.find(c=>c.id===currentChannel); h.innerHTML=`${ch.emoji} <span>#${ch.name}</span> <span class="muted" style="font-size:12px;font-weight:400">· canal d'équipe</span>`; }
+  else { const ch=CHANNELS.find(c=>c.id===currentChannel); h.innerHTML=`<span style="color:var(--gris);font-weight:800;font-size:18px">#</span> <span>${ch.name}</span> <span class="muted" style="font-size:12px;font-weight:400">· canal d'équipe</span>`; }
 }
+function msgById(id){ return wsMessages.find(m=>m.id===id || m._id===id); }
 function renderChatBody(){
   const b=el("chat-body"); if(!b) return;
   const msgs=threadMessages().sort((a,b)=>a.created<b.created?-1:1);
-  if(!msgs.length){ b.innerHTML=`<div class="empty">👋 Démarrez la conversation.</div>`; }
+  if(!msgs.length){ b.innerHTML=`<div class="empty">Démarrez la conversation.</div>`; }
   else {
     b.innerHTML = msgs.map(m=>{
       const mine=m.from===session.userId;
-      return `<div class="msg ${mine?'mine':''}">
+      const recalled=m.recalled;
+      // citation (réponse à un message)
+      let quote="";
+      if(m.replyToText){ quote=`<div class="quoted"><b>${esc(m.replyToName||"")}</b> : ${esc((m.replyToText||"").slice(0,90))}${(m.replyToText||"").length>90?"…":""}</div>`; }
+      const actions = recalled ? "" : `<div class="actions">
+        <button title="Répondre" data-reply="${m.id||m._id}">${icon('reply',14)}</button>
+        ${mine?`<button title="Rappeler le message" data-recall="${m.id||m._id}">${icon('recall',14)}</button>`:""}
+      </div>`;
+      return `<div class="msg ${mine?'mine':''} ${recalled?'recalled':''}">
         ${mine?"":`<div class="avatar sm">${initials(userName(m.from))}</div>`}
-        <div class="bubble">${mine?"":`<div class="who">${esc(userName(m.from))}</div>`}<div class="txt">${esc(m.text)}</div><div class="tm">${clockHM(m.created)}</div></div>
+        <div class="bubble">${mine?"":`<div class="who">${esc(userName(m.from))}</div>`}${quote}<div class="txt">${recalled?"Message rappelé":esc(m.text)}</div><div class="tm">${m.edited?"modifié · ":""}${clockHM(m.created)}</div></div>
+        ${actions}
       </div>`;
     }).join("");
   }
   b.scrollTop=b.scrollHeight;
+  // brancher les actions par message
+  b.querySelectorAll("[data-reply]").forEach(btn=> btn.onclick=()=>{ replyTo=msgById(btn.dataset.reply); renderReplyZone(); const i=el("msg-input"); if(i) i.focus(); });
+  b.querySelectorAll("[data-recall]").forEach(btn=> btn.onclick=()=> recallMessage(btn.dataset.recall));
   markRead(currentThreadKey()); updateBadges();
-  // met à jour la pastille des canaux/DM dans la liste
-  const side=document.querySelector(".chat-side"); if(side){ /* re-render léger des badges via renderMain serait lourd; on laisse */ }
+}
+function renderReplyZone(){
+  const z=el("reply-zone"); if(!z) return;
+  if(!replyTo){ z.innerHTML=""; return; }
+  z.innerHTML=`<div class="reply-preview">${icon('reply',14)}<div class="rp-txt">Réponse à <b>${esc(userName(replyTo.from))}</b> : ${esc((replyTo.text||"").slice(0,70))}</div><span class="rp-x" id="rp-cancel">${icon('x',16)}</span></div>`;
+  const x=el("rp-cancel"); if(x) x.onclick=()=>{ replyTo=null; renderReplyZone(); };
+}
+async function recallMessage(id){
+  const m=msgById(id); if(!m) return;
+  confirmDialog("Rappeler ce message ? Il sera remplacé par « Message rappelé » pour tout le monde (style Outlook).", async ()=>{
+    await wsUpdate("ws_messages", m._id||m.id, { recalled:true, text:"", recalledAt:nowISO() });
+    toast("Message rappelé");
+  }, {title:"Rappeler le message", ok:"Rappeler", danger:true});
 }
 function bindMessages(){
-  document.querySelectorAll("[data-chan]").forEach(c=> c.onclick=()=>{ dmWith=null; currentChannel=c.dataset.chan; renderMain(); });
-  document.querySelectorAll("[data-dm]").forEach(c=> c.onclick=()=>{ dmWith=+c.dataset.dm; renderMain(); });
-  renderChatHead(); renderChatBody();
+  document.querySelectorAll("[data-chan]").forEach(c=> c.onclick=()=>{ dmWith=null; currentChannel=c.dataset.chan; replyTo=null; renderMain(); });
+  document.querySelectorAll("[data-dm]").forEach(c=> c.onclick=()=>{ dmWith=+c.dataset.dm; replyTo=null; renderMain(); });
+  renderChatHead(); renderChatBody(); renderReplyZone();
   const inp=el("msg-input"), send=el("msg-send");
   const doSend = async ()=>{
     const txt=(inp.value||"").trim(); if(!txt) return;
     inp.value="";
-    const row = dmWith
+    const base = dmWith
       ? { id:uid(), type:"dm", from:session.userId, to:dmWith, text:txt, created:nowISO() }
       : { id:uid(), type:"chan", channel:currentChannel, from:session.userId, text:txt, created:nowISO() };
-    try{ await wsAdd("ws_messages", row); }catch(e){ toast("Échec d'envoi"); inp.value=txt; }
+    if(replyTo){ base.replyToId=replyTo.id||replyTo._id; base.replyToText=replyTo.text||""; base.replyToName=userName(replyTo.from); }
+    replyTo=null; renderReplyZone();
+    try{ await wsAdd("ws_messages", base); }catch(e){ toast("Échec d'envoi"); inp.value=txt; }
+  };
+  if(send) send.onclick=doSend;
+  if(inp) inp.onkeydown=e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); doSend(); } };
+}
+window.recallMessage=recallMessage;
+
+/* ============ MESSAGES CLIENTS (réclamations, depuis le portail) ============ */
+function vClients(){
+  const threads=[...webThreads].sort((a,b)=>((b.updated||b.lastDate||"")<(a.updated||a.lastDate||"")?-1:1));
+  const active = threads.find(t=>t._id===activeClientThread) || threads[0] || null;
+  if(active) activeClientThread=active._id;
+  return `<div class="chat-shell">
+    <div class="chat-side" style="width:280px">
+      <div class="sec">Conversations clients (${threads.length})</div>
+      ${threads.length? threads.map(t=>{
+        const last=(t.messages||[])[ (t.messages||[]).length-1 ];
+        const unread=t.unreadForAdmin;
+        return `<div class="chan ${active&&active._id===t._id?'active':''}" data-cthread="${esc(t._id)}" style="align-items:flex-start;flex-direction:column;gap:2px">
+          <div style="display:flex;align-items:center;gap:8px;width:100%"><span class="avatar sm">${initials(t.client_name||"C")}</span><b style="flex:1;font-size:13px">${esc(t.client_name||"Client")}</b>${unread?`<span class="badge">●</span>`:""}</div>
+          <div class="muted" style="font-size:11px;padding-left:36px;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc((last?last.text:"")||"")}</div>
+        </div>`;
+      }).join("") : `<div class="empty" style="padding:18px;font-size:13px">Aucune conversation client pour l'instant.<br><br>Les messages envoyés depuis le portail clients apparaîtront ici.</div>`}
+    </div>
+    <div class="chat-main">
+      ${active?`
+        <div class="chat-head"><span class="avatar sm">${initials(active.client_name||"C")}</span> ${esc(active.client_name||"Client")} <span class="muted" style="font-size:12px;font-weight:400">· réclamation / message client</span></div>
+        <div class="chat-body" id="cl-body"></div>
+        <div class="chat-input">
+          <textarea id="cl-input" rows="1" placeholder="Répondre au client…"></textarea>
+          <button class="btn" id="cl-send">${icon('send',16)} Répondre</button>
+        </div>` : `<div class="empty" style="margin:auto">Sélectionnez une conversation.</div>`}
+    </div>
+  </div>`;
+}
+function renderClientBody(){
+  const b=el("cl-body"); if(!b) return;
+  const t=webThreads.find(x=>x._id===activeClientThread); if(!t){ b.innerHTML=`<div class="empty">—</div>`; return; }
+  const msgs=t.messages||[];
+  b.innerHTML = msgs.length? msgs.map(m=>{
+    const fromStaff = m.from==="DISTRIVIA";
+    return `<div class="msg ${fromStaff?'mine':''}">
+      ${fromStaff?"":`<div class="avatar sm">${initials(t.client_name||"C")}</div>`}
+      <div class="bubble">${fromStaff&&m.by?`<div class="who">${esc(m.by)}</div>`:""}<div class="txt">${esc(m.text)}</div><div class="tm">${clockHM(m.date)}</div></div>
+    </div>`;
+  }).join("") : `<div class="empty">Aucun message.</div>`;
+  b.scrollTop=b.scrollHeight;
+}
+function bindClients(){
+  document.querySelectorAll("[data-cthread]").forEach(c=> c.onclick=()=>{ activeClientThread=c.dataset.cthread; renderMain(); });
+  renderClientBody();
+  // marquer lu
+  const t=webThreads.find(x=>x._id===activeClientThread);
+  if(t && t.unreadForAdmin){ wsUpdate("portal_threads", t._id, { unreadForAdmin:false }).catch(()=>{}); }
+  const send=el("cl-send"), inp=el("cl-input");
+  const doSend=async ()=>{
+    const txt=(inp.value||"").trim(); if(!txt||!t) return; inp.value="";
+    const msg={ from:"DISTRIVIA", text:txt, date:nowISO(), by:session.name };
+    const messages=[...(t.messages||[]), msg];
+    try{ await wsUpdate("portal_threads", t._id, { messages, lastFrom:"DISTRIVIA", lastText:txt, updated:nowISO(), unreadForAdmin:false }); }
+    catch(e){ toast("Échec d'envoi"); inp.value=txt; }
   };
   if(send) send.onclick=doSend;
   if(inp) inp.onkeydown=e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); doSend(); } };
 }
 
+/* ============ SALLE DE RÉUNION (visio/audio/partage écran via Jitsi) ============ */
+let jitsiApi=null;
+function vMeeting(){
+  return `
+  <div class="meet-hero">
+    <h2 style="font-size:22px;margin-bottom:6px">Salle de réunion DISTRIVIA</h2>
+    <p style="color:#C9D4E2;max-width:640px">Lancez une réunion vidéo d'équipe : caméra, micro, partage d'écran et discussion. Invitez vos collègues en partageant simplement le nom de la salle.</p>
+  </div>
+  <div id="meet-launch">
+    <div class="grid g2">
+      <div class="meet-card" data-room="DISTRIVIA-Equipe">
+        <div class="meet-ic">${icon('users',24)}</div>
+        <div><div style="font-weight:700">Réunion d'équipe</div><div class="muted" style="font-size:13px">Salle permanente pour toute l'équipe DISTRIVIA</div></div>
+      </div>
+      <div class="meet-card" data-room="DISTRIVIA-Direction">
+        <div class="meet-ic">${icon('video',24)}</div>
+        <div><div style="font-weight:700">Réunion direction</div><div class="muted" style="font-size:13px">Salle pour les responsables</div></div>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:16px">
+      <h3>${icon('plus',16)} Salle personnalisée</h3>
+      <div class="row">
+        <input id="meet-room" placeholder="Nom de la salle (ex. Point-logistique-lundi)" style="flex:1;min-width:200px">
+        <button class="btn b" id="meet-go">${icon('video',16)} Démarrer / Rejoindre</button>
+      </div>
+      <p class="muted" style="font-size:12px;margin-top:8px">Astuce : partagez exactement le même nom de salle à vos collègues pour vous retrouver dans la même réunion.</p>
+    </div>
+    <p class="muted" style="font-size:12px;margin-top:12px">La salle de réunion utilise la technologie Jitsi (chiffrée, sans installation). Autorisez l'accès à votre caméra et micro quand votre navigateur le demande.</p>
+  </div>
+  <div id="meet-room-wrap" style="display:none">
+    <div class="row" style="justify-content:space-between;margin-bottom:10px">
+      <h3 style="color:var(--bleu)" id="meet-title"></h3>
+      <button class="btn r" id="meet-leave">${icon('phone',16)} Quitter la réunion</button>
+    </div>
+    <div id="jitsi-container" class="meet-frame"></div>
+  </div>`;
+}
+function bindMeeting(){
+  document.querySelectorAll("[data-room]").forEach(c=> c.onclick=()=> startMeeting(c.dataset.room));
+  const go=el("meet-go"); if(go) go.onclick=()=>{ const r=(el("meet-room").value||"").trim().replace(/[^a-zA-Z0-9\-]/g,"-"); if(!r) return toast("Nom de salle requis"); startMeeting("DISTRIVIA-"+r); };
+  const leave=el("meet-leave"); if(leave) leave.onclick=leaveMeeting;
+}
+function loadJitsi(){
+  return new Promise((resolve,reject)=>{
+    if(window.JitsiMeetExternalAPI) return resolve();
+    const s=document.createElement("script"); s.src="https://meet.jit.si/external_api.js";
+    s.onload=()=>resolve(); s.onerror=()=>reject(new Error("Impossible de charger la salle de réunion (vérifiez votre connexion)."));
+    document.head.appendChild(s);
+  });
+}
+async function startMeeting(room){
+  el("meet-launch").style.display="none";
+  el("meet-room-wrap").style.display="block";
+  el("meet-title").textContent = "Réunion : "+room.replace(/^DISTRIVIA-/,"");
+  try{
+    await loadJitsi();
+    const domain="meet.jit.si";
+    const container=el("jitsi-container"); container.innerHTML="";
+    jitsiApi = new window.JitsiMeetExternalAPI(domain, {
+      roomName: room,
+      parentNode: container,
+      width:"100%", height:"100%",
+      userInfo:{ displayName: session.name },
+      configOverwrite:{ prejoinPageEnabled:true, disableDeepLinking:true },
+      interfaceConfigOverwrite:{ MOBILE_APP_PROMO:false, SHOW_JITSI_WATERMARK:false, DEFAULT_BACKGROUND:"#0F2A4A" }
+    });
+    jitsiApi.addEventListener("readyToClose", leaveMeeting);
+  }catch(e){
+    el("jitsi-container").innerHTML=`<div style="color:#fff;text-align:center;padding:60px 20px"><p>${esc(e.message)}</p><p style="opacity:.7;font-size:13px;margin-top:8px">Vous pouvez aussi ouvrir la salle directement : <a href="https://meet.jit.si/${esc(room)}" target="_blank" style="color:#E0764A">meet.jit.si/${esc(room)}</a></p></div>`;
+  }
+}
+function leaveMeeting(){
+  try{ if(jitsiApi){ jitsiApi.dispose(); jitsiApi=null; } }catch(e){}
+  if(view==="meeting") renderMain();
+}
+
+
 /* ============ TÂCHES (Kanban) ============ */
 let taskFilter = "all"; // all | mine
 function vTasks(){
-  const cols=[["todo","À faire","📋"],["doing","En cours","🔧"],["done","Terminé","✅"]];
+  const cols=[["todo","À faire"],["doing","En cours"],["done","Terminé"]];
   const visible = wsTasks.filter(tk=> taskFilter==="all" ? true : tk.assignee===session.userId);
   return `
   <div class="row" style="justify-content:space-between;margin-bottom:14px">
@@ -655,15 +924,15 @@ function vTasks(){
     <button class="btn b" id="task-new">+ Nouvelle tâche</button>
   </div>
   <div class="kanban">
-    ${cols.map(([st,label,emo])=>{
+    ${cols.map(([st,label])=>{
       const items = visible.filter(tk=>(tk.status||"todo")===st).sort((a,b)=>(a.due||"9")<(b.due||"9")?-1:1);
       return `<div class="kcol" data-col="${st}">
-        <h4>${emo} ${label} <span class="ct">${items.length}</span></h4>
+        <h4>${label} <span class="ct">${items.length}</span></h4>
         ${items.map(tk=>taskCard(tk)).join("")||`<div class="empty" style="padding:14px;font-size:12px">—</div>`}
       </div>`;
     }).join("")}
   </div>
-  <p class="muted" style="font-size:12px;margin-top:12px">💡 Glissez-déposez une carte d'une colonne à l'autre pour changer son statut. Cliquez une carte pour la modifier.</p>`;
+  <p class="muted" style="font-size:12px;margin-top:12px">Glissez-déposez une carte d'une colonne à l'autre pour changer son statut. Cliquez une carte pour la modifier.</p>`;
 }
 function taskCard(tk){
   const late = tk.status!=="done" && tk.due && tk.due<today();
@@ -674,7 +943,7 @@ function taskCard(tk){
       <span class="avatar sm" title="${esc(userName(tk.assignee))}">${initials(userName(tk.assignee))}</span>
       <span class="pill ${tk.priority||'low'}">${prioLabel(tk.priority)}</span>
       ${tk.due?`<span class="due ${late?'late':soon?'soon':''}">${late?'⏰ ':''}${frDate(tk.due)}</span>`:""}
-      ${tk.linkOrder?`<span class="muted" style="font-size:11px">🔗 ${esc(tk.linkOrder)}</span>`:""}
+      ${tk.linkOrder?`<span class="muted" style="font-size:11px">${icon("box",12)} ${esc(tk.linkOrder)}</span>`:""}
     </div>
   </div>`;
 }
@@ -745,7 +1014,7 @@ function vApprovals(){
         <td>${a.approver?esc(userName(a.approver)):'<span class="muted">tout admin</span>'}</td>
         <td><span class="pill ${a.status}">${apprStatus(a.status)}</span>${a.decidedBy?`<div class="muted" style="font-size:11px">par ${esc(userName(a.decidedBy))}</div>`:""}${a.decisionNote?`<div class="muted" style="font-size:11px">"${esc(a.decisionNote)}"</div>`:""}</td>
         <td class="muted">${timeAgo(a.created)}</td>
-        <td>${a.status==="pending"&&(isAdmin()||a.approver===session.userId)?`<div class="row"><button class="btn v sm" data-aok="${a._id}">✓</button><button class="btn r sm" data-ano="${a._id}">✕</button></div>`:""}</td>
+        <td>${a.status==="pending"&&(isAdmin()||a.approver===session.userId)?`<div class="row"><button class="btn v sm" data-aok="${a._id}">${icon("check",14)}</button><button class="btn r sm" data-ano="${a._id}">${icon("x",14)}</button></div>`:""}</td>
       </tr>`).join("")}
     </table></div>` : `<p class="empty">Aucune validation ${apprFilter==='pending'?'en attente':''}.</p>`}
   </div>`;
@@ -794,8 +1063,8 @@ function vAnnouncements(){
   ${isAdmin()?`<div class="row" style="justify-content:flex-end;margin-bottom:14px"><button class="btn b" id="ann-new">+ Nouvelle annonce</button></div>`:""}
   ${list.length? list.map(a=>`<div class="panel" style="${a.pinned?'border-left:4px solid var(--terra)':''}">
     <div class="row" style="justify-content:space-between;align-items:flex-start">
-      <h3 style="margin:0">${a.pinned?"📌 ":"📣 "}${esc(a.title)}</h3>
-      ${isAdmin()?`<div class="row"><button class="btn ghost sm" data-annpin="${a._id}">${a.pinned?"Désépingler":"Épingler"}</button><button class="btn r sm" data-anndel="${a._id}">✕</button></div>`:""}
+      <h3 style="margin:0">${a.pinned?icon("pin",15)+" ":icon("megaphone",15)+" "}${esc(a.title)}</h3>
+      ${isAdmin()?`<div class="row"><button class="btn ghost sm" data-annpin="${a._id}">${a.pinned?"Désépingler":"Épingler"}</button><button class="btn r sm" data-anndel="${a._id}">${icon("x",14)}</button></div>`:""}
     </div>
     <p style="margin:8px 0;white-space:pre-wrap;color:#333">${esc(a.body||"")}</p>
     <div class="muted" style="font-size:12px">${esc(userName(a.author))} · ${timeAgo(a.created)}</div>
@@ -827,7 +1096,7 @@ function vObjectives(){
   <div class="grid g2">
   ${list.length? list.map(o=>{ const pct=o.target>0?Math.min(100,Math.round(o.current/o.target*100)):0; const cls=pct>=80?"":pct>=40?"warn":"bad";
     return `<div class="panel">
-      <div class="row" style="justify-content:space-between"><h3 style="margin:0">🎯 ${esc(o.title)}</h3>${isAdmin()?`<button class="btn ghost sm" data-objedit="${o._id}">Modifier</button>`:""}</div>
+      <div class="row" style="justify-content:space-between"><h3 style="margin:0">${icon("target",16)} ${esc(o.title)}</h3>${isAdmin()?`<button class="btn ghost sm" data-objedit="${o._id}">Modifier</button>`:""}</div>
       <div style="display:flex;justify-content:space-between;font-size:13px;margin:10px 0 5px"><span class="muted">${(o.current||0).toLocaleString("fr-FR")} / ${(o.target||0).toLocaleString("fr-FR")} ${esc(o.unit||"")}</span><b>${pct}%</b></div>
       <div class="prog ${cls}"><i style="width:${pct}%"></i></div>
       ${o.deadline?`<div class="muted" style="font-size:12px;margin-top:8px">Échéance : ${frDate(o.deadline)}</div>`:""}
@@ -864,7 +1133,7 @@ function vLeave(){
   const toReview=isAdmin()?wsLeave.filter(l=>l.status==="pending").sort((a,b)=>a.created<b.created?1:-1):[];
   return `
   <div class="grid g2">
-    <div class="panel"><h3>📝 Demander un congé</h3>
+    <div class="panel"><h3>${icon("leave")} Demander un congé</h3>
       <div class="grid g2">
         <div><label>Du</label><input type="date" id="lv-from"></div>
         <div><label>Au</label><input type="date" id="lv-to"></div>
@@ -873,14 +1142,14 @@ function vLeave(){
       <label>Motif (facultatif)</label><input id="lv-reason" placeholder="Précisez si besoin…">
       <button class="btn full" style="margin-top:14px" id="lv-send">Envoyer la demande</button>
     </div>
-    <div class="panel"><h3>📋 Mes demandes</h3>
+    <div class="panel"><h3>Mes demandes</h3>
       ${mine.length? mine.map(l=>`<div style="padding:9px 0;border-bottom:1px solid #f1ede2;display:flex;justify-content:space-between;align-items:center">
         <div><div style="font-weight:600;font-size:13.5px">${esc(l.type)} · ${frDate(l.from)} → ${frDate(l.to)}</div>${l.reason?`<div class="muted" style="font-size:11px">${esc(l.reason)}</div>`:""}${l.decisionNote?`<div class="muted" style="font-size:11px">"${esc(l.decisionNote)}"</div>`:""}</div>
         <span class="pill ${l.status}">${apprStatus(l.status)}</span>
       </div>`).join("") : `<p class="empty">Aucune demande.</p>`}
     </div>
   </div>
-  ${isAdmin()?`<div class="panel"><h3>🔏 Demandes à traiter (${toReview.length})</h3>
+  ${isAdmin()?`<div class="panel"><h3>${icon("approve")} Demandes à traiter (${toReview.length})</h3>
     ${toReview.length? `<div class="tablewrap"><table><tr><th>Employé</th><th>Type</th><th>Période</th><th>Motif</th><th></th></tr>
       ${toReview.map(l=>`<tr><td><b>${esc(userName(l.user))}</b></td><td class="muted">${esc(l.type)}</td><td>${frDate(l.from)} → ${frDate(l.to)}</td><td class="muted">${esc(l.reason||"—")}</td>
         <td><div class="row"><button class="btn v sm" data-lvok="${l._id}">Approuver</button><button class="btn r sm" data-lvno="${l._id}">Refuser</button></div></td></tr>`).join("")}
@@ -914,7 +1183,7 @@ function vTeam(){
       <div class="muted" style="font-size:12px">${u.role==="admin"?"Administrateur":"Employé"}</div>
       <div class="muted" style="font-size:12px">@${esc(u.login||"")}</div>
       <div class="row" style="justify-content:center;margin-top:10px">
-        ${u.id!==session.userId?`<button class="btn ghost sm" onclick="openDM(${u.id})">💬 Message</button>`:`<span class="pill done">C'est vous</span>`}
+        ${u.id!==session.userId?`<button class="btn ghost sm" onclick="openDM(${u.id})">${icon("chat",14)} Message</button>`:`<span class="pill done">C'est vous</span>`}
       </div>
     </div>`).join("")}
   </div>`;
@@ -925,11 +1194,11 @@ window.openDM=openDM;
 /* ============ NOTIFICATIONS ============ */
 function vNotifications(){
   const notifs=computeNotifications();
-  return `<div class="panel"><h3>🔔 Centre de notifications</h3>
+  return `<div class="panel"><h3>${icon("bell")} Centre de notifications</h3>
     <p class="muted" style="font-size:13px;margin-bottom:12px">Alertes générées automatiquement depuis vos données DISTRIVIA Gestion (stock, factures, tâches).</p>
     ${notifs.length? notifs.map(n=>`<div class="notif-item ${n.urgent?'urgent':''}"><div class="ic">${n.ic}</div><div class="tx">${n.txt}</div>${n.urgent?'<span class="pill high">Urgent</span>':""}</div>`).join("") : `<p class="empty">✅ Tout est sous contrôle, aucune alerte.</p>`}
   </div>
-  <p class="muted" style="font-size:12px">💡 Ces alertes se mettent à jour automatiquement. Connectez-vous régulièrement pour rester informé.</p>`;
+  <p class="muted" style="font-size:12px">Ces alertes se mettent à jour automatiquement. Connectez-vous régulièrement pour rester informé.</p>`;
 }
 
 /* ============ BOOT ============ */
