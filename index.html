@@ -269,6 +269,18 @@
   .meet-card{background:#fff;border-radius:12px;padding:16px;box-shadow:var(--ombre);display:flex;align-items:center;gap:14px;cursor:pointer;border:1px solid #efe9db;transition:.15s;}
   .meet-card:hover{box-shadow:var(--ombre2);transform:translateY(-2px);}
   .meet-ic{width:48px;height:48px;border-radius:12px;background:var(--creme);color:var(--bleu);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  /* pièces jointes */
+  .file-chip{display:inline-flex;align-items:center;gap:10px;background:#fff;border:1px solid #E6DFD0;border-radius:10px;padding:8px 12px;margin-top:4px;text-decoration:none;color:inherit;max-width:260px;}
+  .msg.mine .file-chip{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.25);}
+  .file-ic{position:relative;width:34px;height:34px;border-radius:8px;background:var(--bleu);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .file-ic i{position:absolute;bottom:-5px;font-style:normal;font-size:8px;font-weight:800;background:var(--terra);color:#fff;padding:0 3px;border-radius:3px;}
+  .file-meta{display:flex;flex-direction:column;min-width:0;}
+  .file-meta b{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .file-meta span{font-size:11px;opacity:.7;}
+  .msg-img:hover{filter:brightness(.95);}
+  /* réunion intégrée */
+  .meet-embed{width:100%;height:calc(100vh - 200px);min-height:440px;border:none;border-radius:14px;background:#000;display:block;}
+  body.dark .file-chip{background:#22344a;border-color:#2a3d54;}
 
   @media(max-width:860px){
     .sidebar{transform:translateX(-100%);}
@@ -355,6 +367,28 @@ async function sha256(txt){
   }
   let h=0; for(let i=0;i<txt.length;i++){ h=(h*31+txt.charCodeAt(i))|0; } return "x"+(h>>>0).toString(16);
 }
+// Compresse une image en dataURL JPEG (pour partage dans la messagerie)
+function compressImage(file, maxSize, quality){
+  maxSize=maxSize||1100; quality=quality||0.7;
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{ const img=new Image(); img.onload=()=>{
+      let {width:w,height:h}=img;
+      if(w>h){ if(w>maxSize){ h=Math.round(h*maxSize/w); w=maxSize; } } else { if(h>maxSize){ w=Math.round(w*maxSize/h); h=maxSize; } }
+      const c=document.createElement("canvas"); c.width=w; c.height=h;
+      c.getContext("2d").drawImage(img,0,0,w,h);
+      resolve(c.toDataURL("image/jpeg", quality));
+    }; img.onerror=reject; img.src=e.target.result; };
+    reader.onerror=reject; reader.readAsDataURL(file);
+  });
+}
+function fileToDataURL(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.target.result); r.onerror=rej; r.readAsDataURL(file); }); }
+function humanSize(b){ if(b<1024) return b+" o"; if(b<1048576) return (b/1024).toFixed(0)+" Ko"; return (b/1048576).toFixed(1)+" Mo"; }
+function fileExtLabel(name,mime){ const ext=(name||"").split(".").pop().toUpperCase(); if(ext&&ext.length<=4) return ext; if(/pdf/.test(mime)) return "PDF"; if(/image/.test(mime)) return "IMG"; return "FIC"; }
+// linkifie les URL d'un texte déjà échappé
+function linkify(escaped){
+  return escaped.replace(/(https?:\/\/[^\s<]+)/g, u=>`<a href="${u}" target="_blank" rel="noopener" style="text-decoration:underline">${u}</a>`);
+}
 
 /* ============ État applicatif ============ */
 let session = null;          // { userId, name, role }
@@ -375,6 +409,7 @@ let webThreads = [];          // portal_threads : messages/réclamations des cli
 let soundOn = (function(){ try{ return localStorage.getItem("distrivia-ws-sound")!=="0"; }catch(e){ return true; } })();
 let activeClientThread = null;
 let replyTo = null;           // message auquel on répond (style Outlook)
+let pendingAttach = null;     // pièce jointe en attente d'envoi
 let myStatus = (function(){ try{ return localStorage.getItem("distrivia-ws-status")||"available"; }catch(e){ return "available"; } })();
 let theme = (function(){ try{ return localStorage.getItem("distrivia-ws-theme")||"light"; }catch(e){ return "light"; } })();
 const STATUS = {available:"Disponible", busy:"Occupé", dnd:"Ne pas déranger", away:"Absent"};
@@ -845,8 +880,11 @@ function vMessages(){
       <div class="chat-head" id="chat-head"></div>
       <div class="chat-body" id="chat-body"></div>
       <div id="reply-zone"></div>
+      <div id="attach-zone"></div>
       <div class="chat-input">
+        <button class="btn ghost" id="msg-attach" title="Joindre un fichier" style="flex-shrink:0">${icon('plus',16)}</button>
         <button class="btn ghost" id="msg-poll" title="Créer un sondage" style="flex-shrink:0">${icon('approve',16)}</button>
+        <input type="file" id="msg-file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" style="display:none">
         <textarea id="msg-input" rows="1" placeholder="Votre message…  (mentionnez avec @)"></textarea>
         <button class="btn" id="msg-send">${icon('send',16)} Envoyer</button>
       </div>
@@ -875,11 +913,19 @@ function renderChatHead(){
 }
 function msgById(id){ return wsMessages.find(m=>m.id===id || m._id===id); }
 function renderMentions(text){
-  // surligne @Prénom si correspond à un membre
-  return esc(text).replace(/@([\wÀ-ÿ\-]+)/g, (full, name)=>{
+  // surligne @Prénom + rend les liens cliquables
+  let html = esc(text).replace(/@([\wÀ-ÿ\-]+)/g, (full, name)=>{
     const u=users.find(u=> u.name.split(" ")[0].toLowerCase()===name.toLowerCase() || u.name.toLowerCase()===name.toLowerCase() || (u.login||"").toLowerCase()===name.toLowerCase());
     return u ? `<span class="mention">@${esc(u.name.split(" ")[0])}</span>` : full;
   });
+  return linkify(html);
+}
+function attachmentHTML(m){
+  const a=m.attachment; if(!a) return "";
+  if(a.type==="image"){
+    return `<img class="msg-img" src="${a.data}" alt="${esc(a.name||'image')}" data-img="${esc(a.data)}" style="max-width:240px;max-height:240px;border-radius:10px;margin-top:4px;cursor:pointer;display:block">`;
+  }
+  return `<a class="file-chip" href="${a.data}" download="${esc(a.name||'fichier')}"><span class="file-ic">${icon('box',16)}<i>${esc(fileExtLabel(a.name,a.mime))}</i></span><span class="file-meta"><b>${esc(a.name||'fichier')}</b><span>${a.size?humanSize(a.size):""}</span></span></a>`;
 }
 function detectMentions(text){
   const ids=[];
@@ -915,7 +961,7 @@ function renderChatBody(){
       const recalled=m.recalled;
       let quote="";
       if(m.replyToText){ quote=`<div class="quoted"><b>${esc(m.replyToName||"")}</b> : ${esc((m.replyToText||"").slice(0,90))}${(m.replyToText||"").length>90?"…":""}</div>`; }
-      const body = m.type==="poll" ? pollHTML(m) : `<div class="txt">${recalled?"Message rappelé":renderMentions(m.text)}</div>`;
+      const body = m.type==="poll" ? pollHTML(m) : `${m.text?`<div class="txt">${recalled?"Message rappelé":renderMentions(m.text)}</div>`:""}${!recalled?attachmentHTML(m):""}`;
       const actions = recalled ? "" : `<div class="actions">
         <button title="Réagir" data-reactadd="${m.id||m._id}">${icon('plus',14)}</button>
         <button title="Répondre" data-reply="${m.id||m._id}">${icon('reply',14)}</button>
@@ -937,7 +983,12 @@ function renderChatBody(){
   b.querySelectorAll("[data-reactadd]").forEach(btn=> btn.onclick=(e)=>{ e.stopPropagation(); openReactPop(btn, btn.dataset.reactadd); });
   b.querySelectorAll("[data-react]").forEach(ch=> ch.onclick=()=>{ const [id,emo]=ch.dataset.react.split("|"); toggleReaction(id,emo); });
   b.querySelectorAll("[data-pollvote]").forEach(o=> o.onclick=()=>{ const [id,idx]=o.dataset.pollvote.split("|"); votePoll(id,+idx); });
+  b.querySelectorAll("[data-img]").forEach(im=> im.onclick=()=> openLightbox(im.dataset.img));
   markRead(currentThreadKey()); updateBadges();
+}
+function openLightbox(src){
+  el("modal").innerHTML=`<div class="modalbg" id="lb-bg" style="background:rgba(10,18,30,.9)"><img src="${src}" style="max-width:94vw;max-height:90vh;border-radius:10px"><button class="x" style="position:absolute;top:18px;right:22px;color:#fff;font-size:34px" onclick="closeModal()">×</button></div>`;
+  el("lb-bg").onclick=e=>{ if(e.target.id==="lb-bg") closeModal(); };
 }
 function openReactPop(anchor, msgId){
   const ex=document.querySelector(".react-pop"); if(ex) ex.remove();
@@ -1001,24 +1052,49 @@ function pollDialog(){
   };
 }
 function bindMessages(){
-  document.querySelectorAll("[data-chan]").forEach(c=> c.onclick=()=>{ dmWith=null; currentChannel=c.dataset.chan; replyTo=null; renderMain(); });
-  document.querySelectorAll("[data-dm]").forEach(c=> c.onclick=()=>{ dmWith=+c.dataset.dm; replyTo=null; renderMain(); });
-  renderChatHead(); renderChatBody(); renderReplyZone();
-  const inp=el("msg-input"), send=el("msg-send"), poll=el("msg-poll");
+  document.querySelectorAll("[data-chan]").forEach(c=> c.onclick=()=>{ dmWith=null; currentChannel=c.dataset.chan; replyTo=null; pendingAttach=null; renderMain(); });
+  document.querySelectorAll("[data-dm]").forEach(c=> c.onclick=()=>{ dmWith=+c.dataset.dm; replyTo=null; pendingAttach=null; renderMain(); });
+  renderChatHead(); renderChatBody(); renderReplyZone(); renderAttachZone();
+  const inp=el("msg-input"), send=el("msg-send"), poll=el("msg-poll"), attach=el("msg-attach"), fileInp=el("msg-file");
   const doSend = async ()=>{
-    const txt=(inp.value||"").trim(); if(!txt) return;
+    const txt=(inp.value||"").trim();
+    if(!txt && !pendingAttach) return;  // rien à envoyer
     inp.value="";
     const mentions=detectMentions(txt);
     const base = dmWith
       ? { id:uid(), type:"dm", from:session.userId, to:dmWith, text:txt, mentions, created:nowISO() }
       : { id:uid(), type:"chan", channel:currentChannel, from:session.userId, text:txt, mentions, created:nowISO() };
     if(replyTo){ base.replyToId=replyTo.id||replyTo._id; base.replyToText=replyTo.text||""; base.replyToName=userName(replyTo.from); }
-    replyTo=null; renderReplyZone();
-    try{ await wsAdd("ws_messages", base); }catch(e){ toast("Échec d'envoi"); inp.value=txt; }
+    if(pendingAttach){ base.attachment=pendingAttach; }
+    replyTo=null; const hadAttach=pendingAttach; pendingAttach=null; renderReplyZone(); renderAttachZone();
+    try{ await wsAdd("ws_messages", base); }catch(e){ toast("Échec d'envoi (fichier trop lourd ?)"); inp.value=txt; pendingAttach=hadAttach; renderAttachZone(); }
   };
   if(send) send.onclick=doSend;
   if(poll) poll.onclick=pollDialog;
+  if(attach) attach.onclick=()=> fileInp && fileInp.click();
+  if(fileInp) fileInp.onchange=async (e)=>{
+    const f=e.target.files[0]; if(!f) return; fileInp.value="";
+    try{
+      if(/^image\//.test(f.type)){
+        const data=await compressImage(f, 1100, 0.7);
+        pendingAttach={ type:"image", name:f.name, data };
+      } else {
+        if(f.size > 680*1024){ toast("Fichier trop lourd (max ~680 Ko). Partagez plutôt un lien Drive/WeTransfer."); return; }
+        const data=await fileToDataURL(f);
+        pendingAttach={ type:"file", name:f.name, mime:f.type||"", size:f.size, data };
+      }
+      renderAttachZone();
+    }catch(err){ toast("Impossible de lire ce fichier"); }
+  };
   if(inp) inp.onkeydown=e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); doSend(); } };
+}
+function renderAttachZone(){
+  const z=el("attach-zone"); if(!z) return;
+  if(!pendingAttach){ z.innerHTML=""; return; }
+  const a=pendingAttach;
+  const preview = a.type==="image" ? `<img src="${a.data}" style="height:40px;border-radius:6px">` : `<span class="file-ic">${icon('box',16)}<i>${esc(fileExtLabel(a.name,a.mime))}</i></span>`;
+  z.innerHTML=`<div class="reply-preview" style="border-left-color:var(--vert)">${preview}<div class="rp-txt">Pièce jointe : <b>${esc(a.name||'fichier')}</b>${a.size?` · ${humanSize(a.size)}`:""}</div><span class="rp-x" id="att-cancel">${icon('x',16)}</span></div>`;
+  const x=el("att-cancel"); if(x) x.onclick=()=>{ pendingAttach=null; renderAttachZone(); };
 }
 window.recallMessage=recallMessage;
 
@@ -1098,74 +1174,89 @@ function bindClients(){
   if(inp) inp.onkeydown=e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); doSend(); } };
 }
 
-/* ============ SALLE DE RÉUNION (Google Meet) ============ */
-// Les réunions partagées sont stockées dans ws_announcements (type:"meeting")
-// => aucune nouvelle collection / règle Firestore nécessaire.
+/* ============ SALLE DE RÉUNION ============ */
+// Réunions Meet partagées stockées dans ws_announcements (type:"meeting") => aucune nouvelle collection.
+let embedRoom = null; // nom de la salle vidéo intégrée en cours
 function activeMeetings(){
-  return wsAnnouncements
-    .filter(a=>a.type==="meeting" && a.meetingUrl)
-    .sort((a,b)=>(b.created<a.created?-1:1));
+  return wsAnnouncements.filter(a=>a.type==="meeting" && a.meetingUrl).sort((a,b)=>(b.created<a.created?-1:1));
 }
 function vMeeting(){
+  if(embedRoom){
+    return `
+    <div class="row" style="justify-content:space-between;margin-bottom:10px">
+      <h3 style="color:var(--bleu)">${icon('video',16)} Réunion en cours · ${esc(embedRoom.replace(/^DISTRIVIA-/,""))}</h3>
+      <button class="btn r" id="meet-quit">${icon('phone',16)} Quitter la réunion</button>
+    </div>
+    <iframe id="meet-iframe" class="meet-embed" allow="camera; microphone; display-capture; fullscreen; speaker; autoplay"
+      src="https://meet.jit.si/${encodeURIComponent(embedRoom)}#config.prejoinPageEnabled=true&userInfo.displayName=%22${encodeURIComponent(session.name)}%22"></iframe>
+    <p class="muted" style="font-size:12px;margin-top:8px">Réunion intégrée (reste dans le Workspace). Autorisez la caméra et le micro quand le navigateur le demande. Partagez le nom « ${esc(embedRoom.replace(/^DISTRIVIA-/,""))} » à un collègue pour qu'il vous rejoigne via « Réunion intégrée ».</p>`;
+  }
   const meetings=activeMeetings();
   return `
   <div class="meet-hero">
     <h2 style="font-size:22px;margin-bottom:6px">Salle de réunion</h2>
-    <p style="color:#C9D4E2;max-width:680px">Lancez une réunion <b>Google Meet</b> (vidéo, audio, partage d'écran) puis partagez le lien à votre équipe en un clic. Tout le monde rejoint la même réunion.</p>
+    <p style="color:#C9D4E2;max-width:680px">Deux options : une <b>réunion intégrée</b> qui reste dans le Workspace, ou <b>Google Meet</b> que vous partagez à l'équipe. Vidéo, audio et partage d'écran dans les deux cas.</p>
   </div>
 
-  <div class="panel">
-    <h3>${icon('video',16)} Démarrer une réunion</h3>
-    <ol style="margin:6px 0 14px 18px;color:#444;font-size:13.5px;line-height:1.9">
-      <li>Cliquez sur <b>« Ouvrir Google Meet »</b> — une nouvelle réunion s'ouvre dans un onglet.</li>
-      <li>Dans Google Meet, copiez le lien de la réunion (ex. <span class="muted">meet.google.com/abc-defg-hij</span>).</li>
-      <li>Collez-le ci-dessous et cliquez <b>« Partager à l'équipe »</b> : vos collègues le verront ici et pourront rejoindre.</li>
-    </ol>
-    <div class="row">
-      <a class="btn b" href="https://meet.google.com/new" target="_blank" rel="noopener" style="text-decoration:none">${icon('video',16)} Ouvrir Google Meet</a>
-    </div>
-    <div style="margin-top:14px">
-      <label>Lien de la réunion Google Meet</label>
+  <div class="grid g2">
+    <div class="panel" style="border-top:3px solid var(--terra)">
+      <h3>${icon('video',16)} Réunion intégrée <span class="pill done" style="margin-left:6px">reste dans l'app</span></h3>
+      <p class="muted" style="font-size:13px;margin-bottom:12px">La visio s'ouvre directement ici, sans quitter le Workspace. Idéal pour un point rapide.</p>
       <div class="row">
-        <input id="meet-url" placeholder="https://meet.google.com/xxx-xxxx-xxx" style="flex:1;min-width:220px">
-        <input id="meet-label" placeholder="Sujet (facultatif)" style="flex:1;min-width:160px">
-        <button class="btn" id="meet-share">${icon('send',16)} Partager à l'équipe</button>
+        <input id="embed-name" placeholder="Nom de la réunion (ex. Point-logistique)" style="flex:1;min-width:180px">
+        <button class="btn b" id="embed-go">${icon('video',16)} Démarrer ici</button>
       </div>
-      <p class="muted" style="font-size:12px;margin-top:6px">Astuce : vous pouvez aussi coller un lien Meet créé depuis votre agenda Google.</p>
+      <p class="muted" style="font-size:12px;margin-top:8px">Vos collègues rejoignent en tapant le même nom de réunion.</p>
+    </div>
+
+    <div class="panel" style="border-top:3px solid #1B3D63">
+      <h3>${icon('video',16)} Google Meet <span class="muted" style="font-size:12px;font-weight:400">· s'ouvre en fenêtre</span></h3>
+      <p class="muted" style="font-size:13px;margin-bottom:10px">Google Meet ne peut pas s'afficher dans l'app (sécurité Google) : il s'ouvre dans une fenêtre, puis vous partagez le lien ici.</p>
+      <div class="row" style="margin-bottom:10px"><button class="btn" id="meet-open">${icon('video',16)} Ouvrir Google Meet</button></div>
+      <label>Coller le lien Meet à partager</label>
+      <div class="row">
+        <input id="meet-url" placeholder="https://meet.google.com/xxx-xxxx-xxx" style="flex:1;min-width:180px">
+        <button class="btn ghost" id="meet-share">${icon('send',16)} Partager</button>
+      </div>
     </div>
   </div>
 
   <div class="panel">
-    <h3>${icon('users',16)} Réunions en cours (${meetings.length})</h3>
+    <h3>${icon('users',16)} Réunions partagées (${meetings.length})</h3>
     ${meetings.length? meetings.map(m=>`
       <div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #f1ede2">
         <div class="meet-ic" style="width:40px;height:40px">${icon('video',20)}</div>
         <div style="flex:1;min-width:0">
           <div style="font-weight:700;font-size:14px">${esc(m.title||"Réunion Google Meet")}</div>
-          <div class="muted" style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.meetingUrl)} · lancée par ${esc(userName(m.author))} · ${timeAgo(m.created)}</div>
+          <div class="muted" style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.meetingUrl)} · ${esc(userName(m.author))} · ${timeAgo(m.created)}</div>
         </div>
-        <a class="btn v sm" href="${esc(m.meetingUrl)}" target="_blank" rel="noopener" style="text-decoration:none">${icon('video',14)} Rejoindre</a>
+        <button class="btn v sm" data-meetjoin="${esc(m.meetingUrl)}">${icon('video',14)} Rejoindre</button>
         ${(m.author===session.userId||isAdmin())?`<button class="btn r sm" data-meetend="${m._id}">${icon('x',14)} Terminer</button>`:""}
-      </div>`).join("") : `<p class="empty">Aucune réunion en cours. Démarrez-en une ci-dessus.</p>`}
-  </div>
-  <p class="muted" style="font-size:12px">Google Meet est gratuit avec un compte Google. Le partage d'écran et la vidéo se gèrent directement dans la fenêtre Meet.</p>`;
+      </div>`).join("") : `<p class="empty">Aucune réunion partagée. Démarrez-en une ci-dessus.</p>`}
+  </div>`;
+}
+function openMeetWindow(url){
+  const w=Math.min(1100, screen.width-80), h=Math.min(740, screen.height-80);
+  const x=(screen.width-w)/2, y=(screen.height-h)/2;
+  window.open(url, "distrivia_meet", `width=${w},height=${h},left=${x},top=${y},menubar=no,toolbar=no,location=yes`);
 }
 function bindMeeting(){
+  const quit=el("meet-quit"); if(quit) quit.onclick=()=>{ embedRoom=null; renderMain(); };
+  const embedGo=el("embed-go");
+  if(embedGo) embedGo.onclick=()=>{ const r=(el("embed-name").value||"").trim().replace(/[^a-zA-Z0-9\-]/g,"-"); if(!r) return toast("Donnez un nom à la réunion"); embedRoom="DISTRIVIA-"+r; renderMain(); };
+  const open=el("meet-open"); if(open) open.onclick=()=> openMeetWindow("https://meet.google.com/new");
   const share=el("meet-share");
   if(share) share.onclick=async ()=>{
     let url=(el("meet-url").value||"").trim();
     if(!url){ return toast("Collez d'abord le lien Google Meet"); }
-    // tolère un code seul ou une URL sans https
     if(/^[a-z]{3}-[a-z]{4}-[a-z]{3}$/i.test(url)) url="https://meet.google.com/"+url;
     if(!/^https?:\/\//i.test(url)) url="https://"+url;
     if(!/meet\.google\.com/i.test(url)){ return toast("Ce lien ne ressemble pas à un lien Google Meet"); }
-    const title=(el("meet-label").value||"").trim() || ("Réunion de "+session.name.split(" ")[0]);
-    try{
-      await wsAdd("ws_announcements", { id:uid(), type:"meeting", meetingUrl:url, title, author:session.userId, created:nowISO() });
-      toast("Réunion partagée à l'équipe ✓");
-      el("meet-url").value=""; el("meet-label").value="";
+    try{ await wsAdd("ws_announcements", { id:uid(), type:"meeting", meetingUrl:url, title:("Réunion de "+session.name.split(" ")[0]), author:session.userId, created:nowISO() });
+      toast("Réunion partagée à l'équipe ✓"); el("meet-url").value="";
     }catch(e){ toast("Échec du partage"); }
   };
+  document.querySelectorAll("[data-meetjoin]").forEach(b=> b.onclick=()=> openMeetWindow(b.dataset.meetjoin));
   document.querySelectorAll("[data-meetend]").forEach(b=> b.onclick=()=> confirmDialog("Terminer cette réunion ? Le lien sera retiré de la liste.", async ()=>{ await wsDelete("ws_announcements", b.dataset.meetend); toast("Réunion terminée"); }, {ok:"Terminer", danger:true}));
 }
 
