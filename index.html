@@ -281,6 +281,43 @@
   /* réunion intégrée */
   .meet-embed{width:100%;height:calc(100vh - 200px);min-height:440px;border:none;border-radius:14px;background:#000;display:block;}
   body.dark .file-chip{background:#22344a;border-color:#2a3d54;}
+  /* ===== EMAIL (Outlook-like) ===== */
+  .mail-shell{display:flex;height:calc(100vh - 130px);background:#fff;border-radius:14px;overflow:hidden;box-shadow:var(--ombre);}
+  .mail-folders{width:200px;border-right:1px solid #eee;flex-shrink:0;padding:12px 0;}
+  .mail-compose-btn{margin:0 12px 10px;width:calc(100% - 24px);}
+  .mfolder{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;font-size:14px;font-weight:600;color:var(--anthra);}
+  .mfolder:hover{background:var(--creme);}
+  .mfolder.active{background:#E8EEF5;color:var(--bleu);border-right:3px solid var(--terra);}
+  .mfolder .mcount{margin-left:auto;background:var(--terra);color:#fff;font-size:11px;font-weight:700;padding:0 7px;border-radius:20px;}
+  .mail-list{width:330px;border-right:1px solid #eee;flex-shrink:0;overflow-y:auto;}
+  .mail-row{padding:11px 14px;border-bottom:1px solid #f1ede2;cursor:pointer;}
+  .mail-row:hover{background:var(--creme);}
+  .mail-row.active{background:#E8EEF5;}
+  .mail-row.unread{border-left:3px solid var(--terra);}
+  .mail-row .mr-top{display:flex;align-items:center;gap:8px;margin-bottom:2px;}
+  .mail-row .mr-from{font-weight:700;font-size:13.5px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .mail-row.unread .mr-from{color:var(--bleu);}
+  .mail-row .mr-time{font-size:11px;color:var(--gris);flex-shrink:0;}
+  .mail-row .mr-subj{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .mail-row .mr-prev{font-size:12px;color:var(--gris);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .mail-read{flex:1;overflow-y:auto;padding:22px 26px;min-width:0;}
+  .mail-read .mh-subj{font-size:20px;color:var(--bleu);font-weight:800;margin-bottom:12px;}
+  .mail-read .mh-meta{display:flex;align-items:center;gap:11px;padding-bottom:14px;border-bottom:1px solid #eee;margin-bottom:16px;}
+  .mail-read .mbody{font-size:14.5px;line-height:1.7;white-space:pre-wrap;word-break:break-word;}
+  .mail-read .msig{margin-top:18px;padding-top:14px;border-top:1px solid #eee;color:#555;font-size:13px;white-space:pre-wrap;}
+  .mail-empty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--gris);}
+  .star{cursor:pointer;color:#cfc8b8;font-size:17px;}
+  .star.on{color:#E0A93B;}
+  .recip-pick{border:1px solid #ddd6c8;border-radius:9px;padding:6px;max-height:120px;overflow-y:auto;display:flex;flex-wrap:wrap;gap:5px;}
+  .recip-chip{background:#E8EEF5;color:var(--bleu);border-radius:16px;padding:2px 10px;font-size:13px;cursor:pointer;}
+  .recip-chip.off{background:var(--creme);color:var(--gris);}
+  body.dark .mail-shell,body.dark .mail-read{background:#16263a;}
+  body.dark .mail-folders,body.dark .mail-list{border-color:#22344a;}
+  body.dark .mfolder:hover,body.dark .mail-row:hover{background:#1d3147;}
+  body.dark .mfolder.active,body.dark .mail-row.active{background:#22344a;}
+  body.dark .mail-row{border-color:#1d2f45;}
+  @media(max-width:920px){ .mail-folders{width:64px;} .mfolder span.mlabel{display:none;} .mail-list{width:200px;} }
+  @media(max-width:680px){ .mail-shell{flex-direction:column;height:auto;} .mail-folders{width:100%;display:flex;overflow-x:auto;border-right:none;border-bottom:1px solid #eee;} .mail-compose-btn{display:none;} .mail-list{width:100%;max-height:40vh;} }
 
   @media(max-width:860px){
     .sidebar{transform:translateX(-100%);}
@@ -382,7 +419,7 @@ function compressImage(file, maxSize, quality){
     reader.onerror=reject; reader.readAsDataURL(file);
   });
 }
-function fileToDataURL(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.target.result); r.onerror=rej; r.readAsDataURL(file); }); }
+function fileToDataURL(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=()=>rej(r.error||new Error("read error")); r.readAsDataURL(file); }); }
 function humanSize(b){ if(b<1024) return b+" o"; if(b<1048576) return (b/1024).toFixed(0)+" Ko"; return (b/1048576).toFixed(1)+" Mo"; }
 function fileExtLabel(name,mime){ const ext=(name||"").split(".").pop().toUpperCase(); if(ext&&ext.length<=4) return ext; if(/pdf/.test(mime)) return "PDF"; if(/image/.test(mime)) return "IMG"; return "FIC"; }
 // linkifie les URL d'un texte déjà échappé
@@ -406,6 +443,9 @@ let wsLeave = [];
 let wsObjectives = [];
 let wsPresence = {};          // {userId: lastSeenISO}
 let webThreads = [];          // portal_threads : messages/réclamations des clients
+let emailFolder = "inbox";    // inbox | sent | drafts | flagged
+let activeEmail = null;       // email ouvert
+let mySignature = null;       // cache de ma signature
 let soundOn = (function(){ try{ return localStorage.getItem("distrivia-ws-sound")!=="0"; }catch(e){ return true; } })();
 let activeClientThread = null;
 let replyTo = null;           // message auquel on répond (style Outlook)
@@ -504,9 +544,13 @@ function attachListeners(){
     const prevIds=new Set(wsMessages.map(m=>m._id));
     const incoming = rows.filter(m=>!prevIds.has(m._id) && m.from!==session.userId);
     wsMessages=rows;
-    if(!firstMsgs && incoming.length){ notifySound(); }
+    // son : nouveau message de chat OU nouvel email pour moi
+    const ring = incoming.some(m=> (m.type==="chan"||m.type==="dm") || (m.type==="email" && !m.draft && (m.to||[]).includes(session.userId)) );
+    if(!firstMsgs && ring){ notifySound(); }
     firstMsgs=false;
-    if(view==="messages") renderChatBody(); updateBadges();
+    if(view==="messages") renderChatBody();
+    else if(view==="email") renderMain();
+    updateBadges();
   });
   listenWs("ws_tasks", rows=>{ wsTasks=rows; if(view==="tasks"||view==="home"||view==="calendar"||view==="performance") renderMain(); updateBadges(); });
   listenWs("ws_approvals", rows=>{ wsApprovals=rows; if(view==="approvals"||view==="home") renderMain(); updateBadges(); });
@@ -625,6 +669,8 @@ function unreadCount(){
   const last = (function(){ try{ return JSON.parse(localStorage.getItem("distrivia-ws-read")||"{}"); }catch(e){ return {}; } })();
   let n=0;
   wsMessages.forEach(m=>{
+    if(m.type!=="chan" && m.type!=="dm" && m.type!=="poll") return; // exclut email/signature
+    if(m.type==="dm" && m.to!==session.userId && m.from!==session.userId) return;
     const key = m.channel || ("dm:"+[m.from,m.to].sort().join("-"));
     const seen = last[key]||0;
     if(m.from!==session.userId && new Date(m.created).getTime()>seen) n++;
@@ -639,6 +685,7 @@ function pendingApprovals(){
 function updateBadges(){
   const set=(id,n)=>{ const b=el("badge-"+id); if(b){ if(n>0){ b.textContent=n; b.style.display=""; } else b.style.display="none"; } };
   set("messages", unreadCount());
+  set("email", emailUnreadCount());
   set("tasks", myTasksTodo());
   set("approvals", pendingApprovals());
   set("clients", webThreads.filter(t=>t.unreadForAdmin).length);
@@ -651,6 +698,7 @@ function updateBadges(){
 const NAV = [
   ["home","Accueil","home"],
   ["messages","Messagerie","chat"],
+  ["email","Email","inbox"],
   ["clients","Clients","inbox"],
   ["meeting","Salle de réunion","video"],
   ["tasks","Tâches","task"],
@@ -663,7 +711,7 @@ const NAV = [
   ["team","Annuaire","users"],
   ["notifications","Notifications","bell"],
 ];
-const VIEW_TITLES = {home:"Accueil",messages:"Messagerie d'équipe",clients:"Messages clients",meeting:"Salle de réunion",tasks:"Tâches",calendar:"Calendrier d'équipe",approvals:"Validations & approbations",announcements:"Annonces internes",objectives:"Objectifs d'équipe",performance:"Performance de l'équipe",leave:"Congés & absences",team:"Annuaire de l'équipe",notifications:"Notifications"};
+const VIEW_TITLES = {home:"Accueil",messages:"Messagerie d'équipe",email:"Email",clients:"Messages clients",meeting:"Salle de réunion",tasks:"Tâches",calendar:"Calendrier d'équipe",approvals:"Validations & approbations",announcements:"Annonces internes",objectives:"Objectifs d'équipe",performance:"Performance de l'équipe",leave:"Congés & absences",team:"Annuaire de l'équipe",notifications:"Notifications"};
 
 function render(){
   const root=el("root");
@@ -740,7 +788,7 @@ function renderCmdK(q){
   // clients
   webThreads.filter(t=> threadName(t).toLowerCase().includes(ql)).slice(0,4).forEach(t=> out.push({sec:"Clients", ic:"inbox", t:threadName(t), m:"conversation client", cmd:"client:"+t._id}));
   // messages
-  wsMessages.filter(m=> !m.recalled && (m.text||"").toLowerCase().includes(ql)).slice(0,6).forEach(m=> out.push({sec:"Messages", ic:"chat", t:(m.text||"").slice(0,60), m:userName(m.from)+" · "+(m.channel?("#"+m.channel):"privé"), cmd:m.channel?("chan:"+m.channel):("dm:"+(m.from===session.userId?m.to:m.from))}));
+  wsMessages.filter(m=> (m.type==="chan"||m.type==="dm") && !m.recalled && (m.text||"").toLowerCase().includes(ql)).slice(0,6).forEach(m=> out.push({sec:"Messages", ic:"chat", t:(m.text||"").slice(0,60), m:userName(m.from)+" · "+(m.channel?("#"+m.channel):"privé"), cmd:m.channel?("chan:"+m.channel):("dm:"+(m.from===session.userId?m.to:m.from))}));
   // annonces
   wsAnnouncements.filter(a=>a.type!=="meeting" && ((a.title||"").toLowerCase().includes(ql)||(a.body||"").toLowerCase().includes(ql))).slice(0,3).forEach(a=> out.push({sec:"Annonces", ic:"megaphone", t:a.title, m:"annonce", cmd:"nav:announcements"}));
   if(!out.length){ res.innerHTML=`<div class="cmdk-item"><span class="ct muted">Aucun résultat pour « ${esc(q)} »</span></div>`; return; }
@@ -765,6 +813,7 @@ function renderMain(){
   const t=el("view-title"); if(t) t.textContent=VIEW_TITLES[view]||"";
   if(view==="home"){ c.innerHTML=vHome(); bindHomeQuick(); }
   else if(view==="messages"){ c.innerHTML=vMessages(); bindMessages(); }
+  else if(view==="email"){ c.innerHTML=vEmail(); bindEmail(); }
   else if(view==="clients"){ c.innerHTML=vClients(); bindClients(); }
   else if(view==="meeting"){ c.innerHTML=vMeeting(); bindMeeting(); }
   else if(view==="tasks"){ c.innerHTML=vTasks(); bindTasks(); }
@@ -1097,6 +1146,186 @@ function renderAttachZone(){
   const x=el("att-cancel"); if(x) x.onclick=()=>{ pendingAttach=null; renderAttachZone(); };
 }
 window.recallMessage=recallMessage;
+
+/* ============ EMAIL (style Outlook, interne à l'équipe) ============ */
+/* Emails et signatures stockés dans ws_messages (type:"email" / "signature")
+   => aucune nouvelle collection Firestore. */
+function allEmails(){ return wsMessages.filter(m=>m.type==="email"); }
+function defaultSignature(u){
+  const co=(gestionState&&gestionState.settings&&gestionState.settings.company)||{};
+  const company=co.name||"DISTRIVIA";
+  const role=u.role==="admin"?"Administrateur":"Collaborateur";
+  const lines=[u.name, role+" · "+company];
+  const contact=[co.phone1, co.email].filter(Boolean).join(" · ");
+  if(contact) lines.push(contact); else lines.push("contact@distrivia.sn");
+  if(co.website) lines.push(co.website);
+  return lines.join("\n");
+}
+function sigOf(userId){
+  const doc=wsMessages.find(m=>m.type==="signature" && m.from===userId);
+  if(doc && doc.text!==undefined) return doc.text;
+  const u=userById(userId); return u?defaultSignature(u):"";
+}
+async function saveSignature(text){
+  // un doc par utilisateur, id fixe
+  const id="sig_"+session.userId;
+  await wsAdd("ws_messages", { id, type:"signature", from:session.userId, text, created:nowISO() }).catch(async()=>{ await wsUpdate("ws_messages", id, {text, created:nowISO()}); });
+  mySignature=text;
+}
+function emailUnreadCount(){ return allEmails().filter(e=> !e.draft && (e.to||[]).includes(session.userId) && !(e.readBy||[]).includes(session.userId)).length; }
+function emailsInFolder(folder){
+  const list=allEmails();
+  let r;
+  if(folder==="inbox") r=list.filter(e=> !e.draft && (e.to||[]).includes(session.userId));
+  else if(folder==="sent") r=list.filter(e=> !e.draft && e.from===session.userId);
+  else if(folder==="drafts") r=list.filter(e=> e.draft && e.from===session.userId);
+  else if(folder==="flagged") r=list.filter(e=> (e.flaggedBy||[]).includes(session.userId));
+  else r=[];
+  return r.sort((a,b)=> a.created<b.created?1:-1);
+}
+function vEmail(){
+  const folders=[["inbox","Boîte de réception","inbox"],["sent","Envoyés","send"],["drafts","Brouillons","edit"],["flagged","Importants","pin"]];
+  const list=emailsInFolder(emailFolder);
+  const active=list.find(e=>e._id===activeEmail) || null;
+  if(active) activeEmail=active._id;
+  const unread=emailUnreadCount();
+  return `<div class="mail-shell">
+    <div class="mail-folders">
+      <button class="btn b mail-compose-btn" id="mail-new">${icon('plus',16)} Nouveau message</button>
+      ${folders.map(f=>{
+        const cnt = f[0]==="inbox"?unread:0;
+        return `<div class="mfolder ${emailFolder===f[0]?'active':''}" data-folder="${f[0]}">${icon(f[2],16)} <span class="mlabel">${f[1]}</span>${cnt?`<span class="mcount">${cnt}</span>`:""}</div>`;
+      }).join("")}
+      <div style="padding:12px 16px;margin-top:10px;border-top:1px solid #eee">
+        <button class="btn ghost sm full" id="mail-sig">${icon('edit',14)} Ma signature</button>
+      </div>
+    </div>
+    <div class="mail-list">
+      ${list.length? list.map(e=>{
+        const unreadRow = emailFolder==="inbox" && !(e.readBy||[]).includes(session.userId);
+        const who = e.from===session.userId ? ("À : "+(e.to||[]).map(id=>userName(id).split(" ")[0]).join(", ")) : userName(e.from);
+        const flagged=(e.flaggedBy||[]).includes(session.userId);
+        return `<div class="mail-row ${active&&active._id===e._id?'active':''} ${unreadRow?'unread':''}" data-email="${esc(e._id)}">
+          <div class="mr-top"><span class="mr-from">${esc(who)}</span><span class="star ${flagged?'on':''}" data-star="${esc(e._id)}">${flagged?'★':'☆'}</span><span class="mr-time">${timeAgo(e.created)}</span></div>
+          <div class="mr-subj">${esc(e.subject||"(sans objet)")}${e.draft?' <span class="muted" style="font-weight:400">— brouillon</span>':''}</div>
+          <div class="mr-prev">${esc((e.body||"").slice(0,80))}</div>
+        </div>`;
+      }).join("") : `<div class="empty" style="padding:30px">Aucun message dans ce dossier.</div>`}
+    </div>
+    <div class="mail-read" id="mail-read">
+      ${active? emailReadHTML(active) : `<div class="mail-empty">Sélectionnez un message à lire.</div>`}
+    </div>
+  </div>`;
+}
+function emailReadHTML(e){
+  const flagged=(e.flaggedBy||[]).includes(session.userId);
+  return `
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+    <div class="mh-subj" style="flex:1">${esc(e.subject||"(sans objet)")}</div>
+    <span class="star ${flagged?'on':''}" data-star="${esc(e._id)}" style="font-size:22px">${flagged?'★':'☆'}</span>
+  </div>
+  <div class="mh-meta">
+    <div class="avatar">${initials(userName(e.from))}</div>
+    <div style="flex:1">
+      <div style="font-weight:700">${esc(userName(e.from))}</div>
+      <div class="muted" style="font-size:12.5px">À : ${esc((e.to||[]).map(id=>userName(id)).join(", "))}</div>
+    </div>
+    <div class="muted" style="font-size:12px">${frDate(e.created)} · ${clockHM(e.created)}</div>
+  </div>
+  <div class="mbody">${linkify(esc(e.body||""))}</div>
+  ${e.signature?`<div class="msig">${linkify(esc(e.signature))}</div>`:""}
+  ${e.attachment?`<div style="margin-top:14px">${attachmentHTML({attachment:e.attachment})}</div>`:""}
+  ${e.draft? `<div class="row" style="margin-top:20px"><button class="btn b" data-editdraft="${esc(e._id)}">${icon('edit',14)} Continuer la rédaction</button><button class="btn r ghost" data-deldraft="${esc(e._id)}">Supprimer</button></div>`
+    : `<div class="row" style="margin-top:20px;gap:8px">
+        <button class="btn" data-reply="${esc(e._id)}">${icon('reply',14)} Répondre</button>
+        ${(e.to||[]).length>1||e.from!==session.userId?`<button class="btn ghost" data-replyall="${esc(e._id)}">${icon('reply',14)} Répondre à tous</button>`:""}
+        <button class="btn ghost" data-forward="${esc(e._id)}">${icon('send',14)} Transférer</button>
+      </div>`}`;
+}
+function bindEmail(){
+  document.querySelectorAll("[data-folder]").forEach(f=> f.onclick=()=>{ emailFolder=f.dataset.folder; activeEmail=null; renderMain(); });
+  document.querySelectorAll("[data-email]").forEach(r=> r.onclick=(ev)=>{ if(ev.target.closest("[data-star]")) return; activeEmail=r.dataset.email; markEmailRead(r.dataset.email); renderMain(); });
+  document.querySelectorAll("[data-star]").forEach(s=> s.onclick=(ev)=>{ ev.stopPropagation(); toggleFlag(s.dataset.star); });
+  const nw=el("mail-new"); if(nw) nw.onclick=()=> composeEmail();
+  const sig=el("mail-sig"); if(sig) sig.onclick=signatureDialog;
+  document.querySelectorAll("[data-reply]").forEach(b=> b.onclick=()=> composeEmail({mode:"reply", srcId:b.dataset.reply}));
+  document.querySelectorAll("[data-replyall]").forEach(b=> b.onclick=()=> composeEmail({mode:"replyall", srcId:b.dataset.replyall}));
+  document.querySelectorAll("[data-forward]").forEach(b=> b.onclick=()=> composeEmail({mode:"forward", srcId:b.dataset.forward}));
+  document.querySelectorAll("[data-editdraft]").forEach(b=> b.onclick=()=> composeEmail({mode:"draft", srcId:b.dataset.editdraft}));
+  document.querySelectorAll("[data-deldraft]").forEach(b=> b.onclick=()=> confirmDialog("Supprimer ce brouillon ?", async ()=>{ await wsDelete("ws_messages", b.dataset.deldraft); activeEmail=null; toast("Brouillon supprimé"); }, {danger:true, ok:"Supprimer"}));
+}
+async function markEmailRead(id){
+  const e=allEmails().find(x=>x._id===id); if(!e) return;
+  if(e.from===session.userId) return;
+  if((e.readBy||[]).includes(session.userId)) return;
+  const readBy=[...(e.readBy||[]), session.userId];
+  try{ await wsUpdate("ws_messages", id, {readBy}); }catch(err){}
+}
+async function toggleFlag(id){
+  const e=allEmails().find(x=>x._id===id); if(!e) return;
+  const arr=[...(e.flaggedBy||[])]; const i=arr.indexOf(session.userId);
+  if(i>=0) arr.splice(i,1); else arr.push(session.userId);
+  try{ await wsUpdate("ws_messages", id, {flaggedBy:arr}); }catch(err){}
+}
+function signatureDialog(){
+  const current = sigOf(session.userId);
+  openModal(`<div class="row" style="justify-content:space-between"><h3>${icon('edit',16)} Ma signature</h3><button class="x" onclick="closeModal()">×</button></div>
+    <p class="muted" style="font-size:13px;margin-bottom:8px">Cette signature est ajoutée automatiquement au bas de vos emails (comme dans Outlook).</p>
+    <textarea id="sig-text" rows="6" style="font-family:inherit">${esc(current)}</textarea>
+    <div class="row" style="justify-content:space-between;margin-top:12px">
+      <button class="btn ghost sm" id="sig-reset">Réinitialiser (auto)</button>
+      <button class="btn" id="sig-save">Enregistrer</button>
+    </div>`);
+  el("sig-reset").onclick=()=>{ el("sig-text").value=defaultSignature(userById(session.userId)); };
+  el("sig-save").onclick=async ()=>{ await saveSignature(el("sig-text").value); closeModal(); toast("Signature enregistrée ✓"); };
+}
+function composeEmail(opts){
+  opts=opts||{};
+  const others=users.filter(u=>u.active!==false && u.id!==session.userId);
+  let preTo=[], preSubject="", preBody="", draftId=null;
+  const src = opts.srcId ? allEmails().find(e=>e._id===opts.srcId) : null;
+  if(opts.mode==="reply" && src){ preTo=[src.from]; preSubject=(/^re\s*:/i.test(src.subject||"")?"":"Re : ")+(src.subject||""); preBody=`\n\n──────────\nLe ${frDate(src.created)}, ${userName(src.from)} a écrit :\n${(src.body||"")}`; }
+  else if(opts.mode==="replyall" && src){ preTo=[src.from, ...(src.to||[])].filter(id=>id!==session.userId); preTo=[...new Set(preTo)]; preSubject=(/^re\s*:/i.test(src.subject||"")?"":"Re : ")+(src.subject||""); preBody=`\n\n──────────\nLe ${frDate(src.created)}, ${userName(src.from)} a écrit :\n${(src.body||"")}`; }
+  else if(opts.mode==="forward" && src){ preSubject=(/^tr\s*:/i.test(src.subject||"")?"":"Tr : ")+(src.subject||""); preBody=`\n\n──────────\nMessage transféré — de ${userName(src.from)}, le ${frDate(src.created)} :\n${(src.body||"")}`; }
+  else if(opts.mode==="draft" && src){ preTo=src.to||[]; preSubject=src.subject||""; preBody=src.body||""; draftId=src._id; }
+  const sig=sigOf(session.userId);
+  openModal(`<div class="row" style="justify-content:space-between"><h3>${icon('send',16)} ${opts.mode==='draft'?'Brouillon':'Nouveau message'}</h3><button class="x" onclick="closeModal()">×</button></div>
+    <label>Destinataires</label>
+    <div class="recip-pick" id="cm-recips">
+      ${others.map(u=>`<span class="recip-chip ${preTo.includes(u.id)?'':'off'}" data-recip="${u.id}">${esc(u.name)}</span>`).join("")}
+    </div>
+    <label>Objet</label><input id="cm-subject" value="${esc(preSubject)}" placeholder="Objet du message">
+    <label>Message</label><textarea id="cm-body" rows="8" placeholder="Votre message…">${esc(preBody)}</textarea>
+    <div style="margin-top:8px;background:var(--creme);border-radius:8px;padding:8px 10px">
+      <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Signature ajoutée automatiquement</div>
+      <div style="font-size:12.5px;color:#555;white-space:pre-wrap">${esc(sig)}</div>
+    </div>
+    <div class="row" style="justify-content:space-between;margin-top:14px">
+      <button class="btn ghost sm" id="cm-draft">Enregistrer le brouillon</button>
+      <button class="btn b" id="cm-send">${icon('send',14)} Envoyer</button>
+    </div>`);
+  const selected=new Set(preTo);
+  document.querySelectorAll("[data-recip]").forEach(c=> c.onclick=()=>{ const id=+c.dataset.recip; if(selected.has(id)){ selected.delete(id); c.classList.add("off"); } else { selected.add(id); c.classList.remove("off"); } });
+  const gather=(draft)=>{
+    const to=[...selected]; const subject=el("cm-subject").value.trim(); const body=el("cm-body").value;
+    return { to, subject, body };
+  };
+  el("cm-send").onclick=async ()=>{
+    const {to,subject,body}=gather();
+    if(!to.length) return toast("Choisissez au moins un destinataire");
+    if(!subject && !body.trim()) return toast("Ajoutez un objet ou un message");
+    const row={ id: draftId||uid(), type:"email", from:session.userId, to, subject, body, signature:sig, readBy:[], flaggedBy:[], created:nowISO() };
+    if(draftId){ await wsUpdate("ws_messages", draftId, {...row, draft:false}); }
+    else { await wsAdd("ws_messages", row); }
+    closeModal(); emailFolder="sent"; activeEmail=row.id; toast("Email envoyé ✓"); renderMain();
+  };
+  el("cm-draft").onclick=async ()=>{
+    const {to,subject,body}=gather();
+    const row={ id: draftId||uid(), type:"email", draft:true, from:session.userId, to, subject, body, signature:sig, readBy:[], flaggedBy:[], created:nowISO() };
+    if(draftId){ await wsUpdate("ws_messages", draftId, row); } else { await wsAdd("ws_messages", row); }
+    closeModal(); emailFolder="drafts"; toast("Brouillon enregistré ✓"); renderMain();
+  };
+}
 
 /* ============ MESSAGES CLIENTS (réclamations, depuis le portail) ============ */
 /* Résout le nom du client d'un thread (le portail stocke party_name) */
@@ -1648,7 +1877,7 @@ function vPerformance(){
     const done=wsTasks.filter(tk=>tk.status==="done" && (tk.doneBy===u.id||tk.assignee===u.id)).length;
     const onTime=wsTasks.filter(tk=>tk.status==="done" && (tk.doneBy===u.id||tk.assignee===u.id) && (!tk.due || (tk.doneAt&&tk.doneAt.slice(0,10)<=tk.due))).length;
     const active=wsTasks.filter(tk=>tk.assignee===u.id && tk.status!=="done").length;
-    const msgs=wsMessages.filter(m=>m.from===u.id && !m.recalled).length;
+    const msgs=wsMessages.filter(m=>m.from===u.id && (m.type==="chan"||m.type==="dm") && !m.recalled).length;
     const decisions=wsApprovals.filter(a=>a.decidedBy===u.id).length;
     const score=done*10 + onTime*5 + msgs + decisions*3;
     const rate=done?Math.round(onTime/done*100):0;
