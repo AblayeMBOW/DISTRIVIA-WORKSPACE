@@ -1,7 +1,7 @@
 /* DISTRIVIA Workspace — Service Worker (PWA)
    Permet l'installation comme application et un fonctionnement de base hors-ligne. */
 const CACHE = "distrivia-ws-v1";
-const SHELL = ["workspace.html", "index.html", "portail.html"];
+const SHELL = ["index.html", "index.html", "index.html"];
 
 self.addEventListener("install", e => {
   self.skipWaiting();
