@@ -4,30 +4,39 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>DISTRIVIA Workspace</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230F2A4A'/%3E%3Ctext x='32' y='42' font-family='Arial,sans-serif' font-size='30' font-weight='bold' fill='white' text-anchor='middle'%3EW%3C/text%3E%3Crect x='18' y='48' width='28' height='4' fill='%23C85E2D'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#0F2A4A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DISTRIVIA">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230F2A4A'/%3E%3Ctext x='32' y='42' font-family='Arial,sans-serif' font-size='30' font-weight='bold' fill='white' text-anchor='middle'%3ED%3C/text%3E%3Crect x='18' y='49' width='28' height='4' fill='%23C85E2D'/%3E%3C/svg%3E">
+<link rel="manifest" href='data:application/manifest+json,{"name":"DISTRIVIA Workspace","short_name":"DISTRIVIA","start_url":".","display":"standalone","background_color":"%230F2A4A","theme_color":"%230F2A4A","icons":[{"src":"data:image/svg%2Bxml,%253Csvg xmlns=%2527http://www.w3.org/2000/svg%2527 viewBox=%25270 0 64 64%2527%253E%253Crect width=%252764%2527 height=%252764%2527 rx=%252714%2527 fill=%2527%25230F2A4A%2527/%253E%253Ctext x=%252732%2527 y=%252742%2527 font-family=%2527Arial%2527 font-size=%252730%2527 font-weight=%2527bold%2527 fill=%2527white%2527 text-anchor=%2527middle%2527%253ED%253C/text%253E%253C/svg%253E","sizes":"any","type":"image/svg+xml"}]}'>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230F2A4A'/%3E%3Ctext x='32' y='42' font-family='Arial,sans-serif' font-size='30' font-weight='bold' fill='white' text-anchor='middle'%3ED%3C/text%3E%3Crect x='18' y='49' width='28' height='4' fill='%23C85E2D'/%3E%3C/svg%3E">
 <style>
   :root{
     --bleu:#0F2A4A; --bleu2:#1B3D63; --bleu3:#26517f; --terra:#C85E2D; --terra2:#E0764A; --creme:#F5F1E8;
     --anthra:#1A1A1A; --gris:#888880; --gris2:#B9B9B0; --blanc:#FFFFFF; --vert:#2E6B3E; --vert2:#3E8B52; --rouge:#A33B3B; --jaune:#C9962B;
-    --ombre:0 2px 10px rgba(15,42,74,.07); --ombre2:0 8px 28px rgba(15,42,74,.16);
+    --ombre:0 1px 3px rgba(15,42,74,.04), 0 4px 16px rgba(15,42,74,.06); --ombre2:0 12px 40px rgba(15,42,74,.18);
+    --radius:16px;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
-  body{font-family:'Segoe UI', system-ui, -apple-system, sans-serif; background:var(--creme); color:var(--anthra); font-size:14.5px; line-height:1.5; -webkit-tap-highlight-color:transparent;}
-  h1,h2,h3,h4{font-family:'Segoe UI', system-ui, sans-serif;}
+  body{font-family:'Segoe UI', system-ui, -apple-system, sans-serif; background:#EEE9DC; color:var(--anthra); font-size:14.5px; line-height:1.5; -webkit-tap-highlight-color:transparent;}
+  body::before{content:""; position:fixed; inset:0; z-index:-1; background:radial-gradient(1200px 600px at 80% -10%, rgba(200,94,45,.06), transparent), radial-gradient(900px 500px at -10% 110%, rgba(27,61,99,.07), transparent);}
+  h1,h2,h3,h4{font-family:'Segoe UI', system-ui, sans-serif; letter-spacing:-.2px;}
   a{color:var(--terra); text-decoration:none;}
   input,select,textarea,button{font-family:inherit; font-size:14px;}
   label{display:block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris); margin:10px 0 4px;}
-  input:not([type=checkbox]):not([type=radio]),select,textarea{width:100%; padding:10px 12px; border:1px solid #ddd6c8; border-radius:9px; background:#fff; outline:none;}
-  input:focus,select:focus,textarea:focus{border-color:var(--bleu2); box-shadow:0 0 0 3px rgba(27,61,99,.1);}
+  input:not([type=checkbox]):not([type=radio]),select,textarea{width:100%; padding:10px 13px; border:1px solid #e0d9c8; border-radius:10px; background:#fff; outline:none; transition:.15s;}
+  input:focus,select:focus,textarea:focus{border-color:var(--bleu2); box-shadow:0 0 0 3px rgba(27,61,99,.12);}
   textarea{resize:vertical; min-height:70px;}
-  .btn{background:var(--bleu); color:#fff; border:none; border-radius:9px; padding:10px 18px; font-weight:700; cursor:pointer; transition:.15s; display:inline-flex; align-items:center; gap:7px; justify-content:center;}
-  .btn:hover{background:var(--bleu2);}
-  .btn.b{background:var(--terra);} .btn.b:hover{background:var(--terra2);}
+  .btn{background:var(--bleu); color:#fff; border:none; border-radius:10px; padding:10px 18px; font-weight:700; cursor:pointer; transition:transform .12s, box-shadow .15s, background .15s; display:inline-flex; align-items:center; gap:7px; justify-content:center; box-shadow:0 2px 8px rgba(15,42,74,.18);}
+  .btn:hover{background:var(--bleu2); transform:translateY(-1px); box-shadow:0 6px 18px rgba(15,42,74,.25);}
+  .btn:active{transform:translateY(0);}
+  .btn.b{background:var(--terra); box-shadow:0 2px 8px rgba(200,94,45,.28);} .btn.b:hover{background:var(--terra2); box-shadow:0 6px 18px rgba(200,94,45,.34);}
   .btn.v{background:var(--vert);} .btn.v:hover{background:var(--vert2);}
   .btn.r{background:var(--rouge);}
-  .btn.ghost{background:#fff; color:var(--bleu); border:1px solid #ddd6c8;}
-  .btn.ghost:hover{background:var(--creme);}
-  .btn.sm{padding:6px 12px; font-size:12.5px; border-radius:7px;}
+  .btn.ghost{background:#fff; color:var(--bleu); border:1px solid #e0d9c8; box-shadow:none;}
+  .btn.ghost:hover{background:var(--creme); box-shadow:0 2px 8px rgba(15,42,74,.08);}
+  .btn.sm{padding:6px 12px; font-size:12.5px; border-radius:8px; box-shadow:none;}
   .btn.full{width:100%;}
   .btn:disabled{opacity:.5; cursor:not-allowed;}
   .row{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
@@ -58,11 +67,18 @@
 
   /* ===== APP SHELL ===== */
   .shell{display:flex; min-height:100vh;}
-  .sidebar{width:230px; background:var(--bleu); color:#fff; display:flex; flex-direction:column; position:fixed; top:0; bottom:0; left:0; z-index:40; transition:transform .25s;}
-  .sb-logo{padding:18px 20px 14px; border-bottom:1px solid rgba(255,255,255,.1);}
-  .sb-logo .wm{font-size:19px; font-weight:800; letter-spacing:3px;}
-  .sb-logo .bar{width:46px; height:3px; background:var(--terra); margin:3px 0;}
+  .sidebar{width:236px; background:linear-gradient(180deg,#0F2A4A 0%,#12243a 100%); color:#fff; display:flex; flex-direction:column; position:fixed; top:0; bottom:0; left:0; z-index:40; transition:transform .25s; box-shadow:4px 0 24px rgba(0,0,0,.12);}
+  .sb-logo{padding:20px 22px 16px; border-bottom:1px solid rgba(255,255,255,.08);}
+  .sb-logo .wm{font-size:20px; font-weight:800; letter-spacing:3px;}
+  .sb-logo .bar{width:46px; height:3px; background:var(--terra); margin:4px 0; border-radius:2px;}
   .sb-logo .sub{font-size:9px; letter-spacing:2px; color:#9FB2C9; font-weight:600;}
+  .sb-nav{padding:10px 12px;}
+  .sb-nav button{display:flex; align-items:center; gap:12px; width:100%; background:none; border:none; color:#AEC0D4; font-weight:600; font-size:13.5px; padding:10px 14px; cursor:pointer; text-align:left; position:relative; border-radius:10px; margin-bottom:2px; transition:.15s;}
+  .sb-nav button:hover{background:rgba(255,255,255,.08); color:#fff;}
+  .sb-nav button.active{background:linear-gradient(90deg,rgba(200,94,45,.22),rgba(200,94,45,.06)); color:#fff;}
+  .sb-nav button.active::before{content:""; position:absolute; left:0; top:7px; bottom:7px; width:3px; background:var(--terra); border-radius:0 3px 3px 0;}
+  .sb-nav button .ico{display:inline-flex; opacity:.85;}
+  .sb-nav button.active .ico{opacity:1; color:var(--terra2);}
   .sb-nav{flex:1; overflow-y:auto; padding:10px 0;}
   .sb-nav button{display:flex; align-items:center; gap:11px; width:100%; background:none; border:none; color:#C9D4E2; font-weight:600; font-size:14px; padding:11px 20px; cursor:pointer; text-align:left; position:relative;}
   .sb-nav button:hover{background:rgba(255,255,255,.07); color:#fff;}
@@ -92,6 +108,54 @@
   .stat.t{border-color:var(--terra);} .stat.v{border-color:var(--vert);} .stat.r{border-color:var(--rouge);} .stat.y{border-color:var(--jaune);}
   .stat .v{font-size:26px; font-weight:800; color:var(--bleu);}
   .stat .l{font-size:12px; color:var(--gris); font-weight:600; text-transform:uppercase; letter-spacing:.4px;}
+
+  /* ===== POLISH ESTHÉTIQUE ===== */
+  .sb-logo{display:flex; align-items:center; gap:11px;}
+  .sb-logo .logo-mark{flex-shrink:0; filter:drop-shadow(0 3px 8px rgba(0,0,0,.25));}
+  .sb-logo .wm{font-size:19px;}
+  .content{animation:fadeUp .35s ease;}
+  @keyframes fadeUp{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
+  .panel{border:1px solid rgba(15,42,74,.04); transition:box-shadow .2s, transform .2s;}
+  .stat{position:relative; overflow:hidden; transition:transform .18s, box-shadow .18s;}
+  .stat:hover{transform:translateY(-3px); box-shadow:0 10px 30px rgba(15,42,74,.12);}
+  .stat::after{content:""; position:absolute; right:-20px; top:-20px; width:80px; height:80px; border-radius:50%; background:currentColor; opacity:.04;}
+  .stat.t{color:var(--terra);} .stat.v{color:var(--vert);} .stat.r{color:var(--rouge);} .stat.y{color:var(--jaune);}
+  .stat .v{color:inherit;} .stat:not(.t):not(.v):not(.r):not(.y){color:var(--bleu);}
+  .stat .l{color:var(--gris);}
+  .avatar{background:linear-gradient(135deg,var(--terra),#A8481F); box-shadow:0 2px 6px rgba(200,94,45,.3);}
+  .sb-nav button.active{box-shadow:inset 0 0 0 1px rgba(255,255,255,.04);}
+  .topbar{backdrop-filter:saturate(1.1); box-shadow:0 1px 0 rgba(15,42,74,.04);}
+  .topbar h2{font-weight:800; letter-spacing:-.3px;}
+  .badge,.mcount{box-shadow:0 1px 3px rgba(200,94,45,.4);}
+  .chan.active,.mfolder.active,.mail-row.active{box-shadow:inset 3px 0 0 var(--terra);}
+  ::-webkit-scrollbar{width:10px; height:10px;}
+  ::-webkit-scrollbar-thumb{background:rgba(15,42,74,.18); border-radius:8px; border:2px solid transparent; background-clip:padding-box;}
+  ::-webkit-scrollbar-thumb:hover{background:rgba(15,42,74,.32); background-clip:padding-box;}
+  .section-title{display:flex; align-items:center; gap:9px; font-size:19px; font-weight:800; color:var(--bleu); letter-spacing:-.3px; margin-bottom:4px;}
+  body.dark .panel{border-color:#22344a;}
+  body.dark .stat{background:#16263a;}
+  body.dark .section-title{color:#E8EDF3;}
+  /* graphiques BI */
+  .chart-bars{display:flex; align-items:flex-end; gap:10px; height:200px; padding-top:10px;}
+  .chart-bars .cb{flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end;}
+  .chart-bars .cb .bar{width:100%; max-width:46px; border-radius:7px 7px 0 0; background:linear-gradient(180deg,var(--bleu3),var(--bleu)); transition:height .5s ease; min-height:3px; position:relative;}
+  .chart-bars .cb .bar.t{background:linear-gradient(180deg,var(--terra2),var(--terra));}
+  .chart-bars .cb .val{font-size:11px; font-weight:700; color:var(--bleu);}
+  .chart-bars .cb .lab{font-size:10.5px; color:var(--gris); font-weight:600; text-align:center;}
+  .bi-list .bil{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid #f1ede2;}
+  .bi-list .bil .rank{width:22px; height:22px; border-radius:6px; background:var(--creme); color:var(--bleu); font-weight:800; font-size:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .bi-list .bil .barwrap{flex:1; height:8px; background:#EFEAdd; border-radius:6px; overflow:hidden;}
+  .bi-list .bil .barwrap i{display:block; height:100%; background:linear-gradient(90deg,var(--terra),var(--terra2)); border-radius:6px;}
+  .donut-wrap{display:flex; align-items:center; gap:20px; flex-wrap:wrap;}
+  .donut-leg{display:flex; flex-direction:column; gap:7px; font-size:13px;}
+  .donut-leg .dl{display:flex; align-items:center; gap:8px;}
+  .donut-leg .dl .sw{width:12px; height:12px; border-radius:3px; flex-shrink:0;}
+  body.dark .bi-list .bil .barwrap{background:#22344a;}
+  /* note vocale + enregistrement */
+  .voice-note{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #E6DFD0;border-radius:10px;padding:6px 10px;margin-top:4px;}
+  .msg.mine .voice-note{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.25);}
+  #msg-mic.recording{background:var(--rouge)!important;border-color:var(--rouge)!important;animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.6;}}
 
   /* ===== MESSAGERIE ===== */
   .chat-shell{display:flex; gap:0; height:calc(100vh - 130px); background:#fff; border-radius:14px; overflow:hidden; box-shadow:var(--ombre);}
@@ -497,6 +561,15 @@ function icon(name, size){
   };
   return `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle">${P[name]||""}</svg>`;
 }
+// Logo monogramme DISTRIVIA (carré arrondi bleu nuit + D + barre terracotta) — charte graphique
+function logoMark(size){
+  const s=size||40;
+  return `<svg width="${s}" height="${s}" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle">
+    <rect x="2" y="2" width="60" height="60" rx="14" fill="#0F2A4A"/>
+    <text x="32" y="42" font-family="Segoe UI, Arial, sans-serif" font-size="34" font-weight="800" fill="#F5F1E8" text-anchor="middle" letter-spacing="0">D</text>
+    <rect x="18" y="49" width="28" height="4" rx="2" fill="#C85E2D"/>
+  </svg>`;
+}
 let dmWith = null;            // userId si on est dans une conversation privée
 
 try{ const s=localStorage.getItem("distrivia-ws-session"); if(s) session=JSON.parse(s); }catch(e){}
@@ -546,7 +619,12 @@ function attachListeners(){
     wsMessages=rows;
     // son : nouveau message de chat OU nouvel email pour moi
     const ring = incoming.some(m=> (m.type==="chan"||m.type==="dm") || (m.type==="email" && !m.draft && (m.to||[]).includes(session.userId)) );
-    if(!firstMsgs && ring){ notifySound(); }
+    if(!firstMsgs && ring){ notifySound();
+      const chatMsg=incoming.find(m=>m.type==="chan"||m.type==="dm");
+      const mailMsg=incoming.find(m=>m.type==="email" && !m.draft && (m.to||[]).includes(session.userId));
+      if(chatMsg) pushNotif("Nouveau message · "+userName(chatMsg.from), (chatMsg.text||"").slice(0,80));
+      else if(mailMsg) pushNotif("Nouvel email · "+userName(mailMsg.from), mailMsg.subject||"");
+    }
     firstMsgs=false;
     if(view==="messages") renderChatBody();
     else if(view==="email") renderMain();
@@ -554,7 +632,7 @@ function attachListeners(){
   });
   listenWs("ws_tasks", rows=>{ wsTasks=rows; if(view==="tasks"||view==="home"||view==="calendar"||view==="performance") renderMain(); updateBadges(); });
   listenWs("ws_approvals", rows=>{ wsApprovals=rows; if(view==="approvals"||view==="home") renderMain(); updateBadges(); });
-  listenWs("ws_announcements", rows=>{ wsAnnouncements=rows; if(view==="announcements"||view==="home"||view==="meeting"||view==="calendar") renderMain(); updateBadges(); });
+  listenWs("ws_announcements", rows=>{ wsAnnouncements=rows; if(["announcements","home","meeting","calendar","wiki","crm","deliveries"].includes(view)) renderMain(); updateBadges(); });
   listenWs("ws_leave", rows=>{ wsLeave=rows; if(view==="leave"||view==="home"||view==="calendar") renderMain(); updateBadges(); });
   listenWs("ws_objectives", rows=>{ wsObjectives=rows; if(view==="objectives"||view==="home") renderMain(); });
   listenWs("ws_presence", rows=>{ wsPresence={}; rows.forEach(r=>wsPresence[r.userId]={at:r.at,status:r.status||"available"}); if(view==="team"||view==="messages") renderMain(); });
@@ -564,7 +642,7 @@ function attachListeners(){
     const prevUnread = webThreads.reduce((a,t)=>a+(t.unreadForAdmin?1:0),0);
     webThreads=rows;
     const newUnread = webThreads.reduce((a,t)=>a+(t.unreadForAdmin?1:0),0);
-    if(!firstThreads && newUnread>prevUnread){ notifySound(); }
+    if(!firstThreads && newUnread>prevUnread){ notifySound(); pushNotif("Nouveau message client", "Une réclamation/message client est arrivé."); }
     firstThreads=false;
     if(view==="clients"||view==="home") renderMain();
     updateBadges();
@@ -584,6 +662,17 @@ function playBeep(){
   }catch(e){}
 }
 function notifySound(){ if(soundOn) playBeep(); }
+// Notifications navigateur (s'affichent même quand l'onglet est en arrière-plan)
+let notifOn = (function(){ try{ return localStorage.getItem("distrivia-ws-notif")==="1"; }catch(e){ return false; } })();
+function requestNotifPerm(){
+  if(!("Notification" in window)){ toast("Notifications non supportées par ce navigateur"); return; }
+  Notification.requestPermission().then(p=>{ notifOn = (p==="granted"); try{localStorage.setItem("distrivia-ws-notif", notifOn?"1":"0");}catch(e){} toast(notifOn?"Notifications activées ✓":"Notifications refusées"); render(); });
+}
+function pushNotif(title, body){
+  if(!notifOn || !("Notification" in window) || Notification.permission!=="granted") return;
+  if(!document.hidden) return; // si l'onglet est visible, le son/badge suffisent
+  try{ const n=new Notification(title, { body, icon:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230F2A4A'/%3E%3Ctext x='32' y='44' font-size='34' font-weight='bold' fill='white' text-anchor='middle' font-family='Arial'%3ED%3C/text%3E%3C/svg%3E", tag:"distrivia" }); n.onclick=()=>{ window.focus(); n.close(); }; }catch(e){}
+}
 
 /* ============ LOGIN (mêmes comptes que Gestion) ============ */
 function presOf(id){ const p=wsPresence[id]; if(!p) return {at:0,status:"away"}; return {at:p.at?new Date(p.at).getTime():0, status:p.status||"available"}; }
@@ -592,7 +681,7 @@ function statusOf(id){ return isOnline(id) ? presOf(id).status : "away"; }
 function statusDotClass(id){ const s=statusOf(id); return isOnline(id) ? s : "off"; }
 function vLogin(){
   return `<div class="login-wrap"><div class="login-card">
-    <div class="login-logo"><div class="wm">DISTRIVIA</div><div class="bar"></div><div class="sub">DISTRIBUTION GROUP</div><div class="ws">WORKSPACE</div></div>
+    <div class="login-logo"><div style="margin-bottom:14px">${logoMark(56)}</div><div class="wm">DISTRIVIA</div><div class="bar"></div><div class="sub">DISTRIBUTION GROUP</div><div class="ws">WORKSPACE</div></div>
     <p class="muted" style="text-align:center;font-size:13px;margin-bottom:6px">Espace de travail interne de l'équipe</p>
     <label>Identifiant</label><input id="lg-login" placeholder="Ex. ablaye" autocomplete="username">
     <label>Mot de passe</label><input id="lg-pass" type="password" autocomplete="current-password">
@@ -697,12 +786,16 @@ function updateBadges(){
 /* ============ RENDER (shell) ============ */
 const NAV = [
   ["home","Accueil","home"],
+  ["dashboard","Tableau de bord","target"],
   ["messages","Messagerie","chat"],
   ["email","Email","inbox"],
   ["clients","Clients","inbox"],
+  ["crm","Relances clients","users"],
   ["meeting","Salle de réunion","video"],
   ["tasks","Tâches","task"],
+  ["deliveries","Livraisons","box"],
   ["calendar","Calendrier","clock"],
+  ["wiki","Base de connaissances","megaphone"],
   ["approvals","Validations","approve"],
   ["announcements","Annonces","megaphone"],
   ["objectives","Objectifs","target"],
@@ -711,7 +804,7 @@ const NAV = [
   ["team","Annuaire","users"],
   ["notifications","Notifications","bell"],
 ];
-const VIEW_TITLES = {home:"Accueil",messages:"Messagerie d'équipe",email:"Email",clients:"Messages clients",meeting:"Salle de réunion",tasks:"Tâches",calendar:"Calendrier d'équipe",approvals:"Validations & approbations",announcements:"Annonces internes",objectives:"Objectifs d'équipe",performance:"Performance de l'équipe",leave:"Congés & absences",team:"Annuaire de l'équipe",notifications:"Notifications"};
+const VIEW_TITLES = {home:"Accueil",dashboard:"Tableau de bord analytique",messages:"Messagerie d'équipe",email:"Email",clients:"Messages clients",crm:"Relances clients (CRM)",meeting:"Salle de réunion",tasks:"Tâches",deliveries:"Suivi des livraisons",calendar:"Calendrier d'équipe",wiki:"Base de connaissances",approvals:"Validations & approbations",announcements:"Annonces internes",objectives:"Objectifs d'équipe",performance:"Performance de l'équipe",leave:"Congés & absences",team:"Annuaire de l'équipe",notifications:"Notifications"};
 
 function render(){
   const root=el("root");
@@ -719,7 +812,7 @@ function render(){
   root.innerHTML = `
   <div class="shell">
     <aside class="sidebar ${sbOpen?'open':''}" id="sidebar">
-      <div class="sb-logo"><div class="wm">DISTRIVIA</div><div class="bar"></div><div class="sub">WORKSPACE</div></div>
+      <div class="sb-logo"><span class="logo-mark">${logoMark(40)}</span><div><div class="wm">DISTRIVIA</div><div class="bar"></div><div class="sub">WORKSPACE</div></div></div>
       <nav class="sb-nav">
         ${NAV.map(n=>`<button data-nav="${n[0]}" class="${view===n[0]?'active':''}"><span class="ico">${icon(n[2])}</span>${n[1]}<span class="badge" id="badge-${n[0]}" style="display:none"></span></button>`).join("")}
       </nav>
@@ -731,6 +824,7 @@ function render(){
           </div>
         </div>
         <button class="sound-toggle" id="sound-toggle" title="Son des notifications">${icon(soundOn?'soundon':'soundoff',16)} <span>${soundOn?"Son activé":"Son coupé"}</span></button>
+        <button class="sound-toggle" id="notif-toggle" title="Notifications du navigateur">${icon('bell',16)} <span>${notifOn?"Notifications ✓":"Activer notifications"}</span></button>
         <div class="who"><div class="avatar sm">${initials(session.name)}</div><div><div style="font-weight:700;font-size:13px">${esc(session.name)}</div><div style="color:#9FB2C9;font-size:11px">${session.role==="admin"?"Administrateur":"Employé"}</div></div></div>
         <button class="btn ghost sm full" onclick="logout()">Déconnexion</button>
       </div>
@@ -750,6 +844,7 @@ function render(){
   </div>`;
   document.querySelectorAll("[data-nav]").forEach(b=> b.onclick = ()=>{ view=b.dataset.nav; sbOpen=false; render(); });
   const st=el("sound-toggle"); if(st) st.onclick=()=>{ soundOn=!soundOn; try{localStorage.setItem("distrivia-ws-sound", soundOn?"1":"0");}catch(e){} if(soundOn) playBeep(); render(); };
+  const nt=el("notif-toggle"); if(nt) nt.onclick=()=>{ if(notifOn){ notifOn=false; try{localStorage.setItem("distrivia-ws-notif","0");}catch(e){} render(); } else requestNotifPerm(); };
   // statut de présence
   const sbtn=el("status-btn"), smenu=el("status-menu");
   if(sbtn) sbtn.onclick=(e)=>{ e.stopPropagation(); smenu.style.display = smenu.style.display==="none"?"block":"none"; };
@@ -790,7 +885,8 @@ function renderCmdK(q){
   // messages
   wsMessages.filter(m=> (m.type==="chan"||m.type==="dm") && !m.recalled && (m.text||"").toLowerCase().includes(ql)).slice(0,6).forEach(m=> out.push({sec:"Messages", ic:"chat", t:(m.text||"").slice(0,60), m:userName(m.from)+" · "+(m.channel?("#"+m.channel):"privé"), cmd:m.channel?("chan:"+m.channel):("dm:"+(m.from===session.userId?m.to:m.from))}));
   // annonces
-  wsAnnouncements.filter(a=>a.type!=="meeting" && ((a.title||"").toLowerCase().includes(ql)||(a.body||"").toLowerCase().includes(ql))).slice(0,3).forEach(a=> out.push({sec:"Annonces", ic:"megaphone", t:a.title, m:"annonce", cmd:"nav:announcements"}));
+  wsAnnouncements.filter(a=>(a.type==null||a.type==="announcement") && ((a.title||"").toLowerCase().includes(ql)||(a.body||"").toLowerCase().includes(ql))).slice(0,3).forEach(a=> out.push({sec:"Annonces", ic:"megaphone", t:a.title, m:"annonce", cmd:"nav:announcements"}));
+  wsAnnouncements.filter(a=>a.type==="wiki" && ((a.title||"").toLowerCase().includes(ql)||(a.body||"").toLowerCase().includes(ql))).slice(0,4).forEach(a=> out.push({sec:"Base de connaissances", ic:"megaphone", t:a.title, m:a.cat||"wiki", cmd:"wiki:"+a._id}));
   if(!out.length){ res.innerHTML=`<div class="cmdk-item"><span class="ct muted">Aucun résultat pour « ${esc(q)} »</span></div>`; return; }
   let html="", lastSec="";
   out.forEach(o=>{ if(o.sec!==lastSec){ html+=`<div class="cmdk-sec">${o.sec}</div>`; lastSec=o.sec; } html+=`<div class="cmdk-item" data-cmd="${o.cmd}"><span class="ci">${icon(o.ic,16)}</span><span class="ct">${esc(o.t)}</span><span class="cm">${esc(o.m)}</span></div>`; });
@@ -803,6 +899,7 @@ function bindCmdK(){
     else if(cmd.startsWith("dm:")){ view="messages"; dmWith=+cmd.slice(3); render(); }
     else if(cmd.startsWith("chan:")){ view="messages"; dmWith=null; currentChannel=cmd.slice(5); render(); }
     else if(cmd.startsWith("client:")){ view="clients"; activeClientThread=cmd.slice(7); render(); }
+    else if(cmd.startsWith("wiki:")){ view="wiki"; activeWiki=cmd.slice(5); render(); }
   });
 }
 function toggleSb(){ sbOpen=!sbOpen; const s=el("sidebar"); if(s) s.classList.toggle("open", sbOpen); }
@@ -812,6 +909,10 @@ function renderMain(){
   const c=el("content"); if(!c) return;
   const t=el("view-title"); if(t) t.textContent=VIEW_TITLES[view]||"";
   if(view==="home"){ c.innerHTML=vHome(); bindHomeQuick(); }
+  else if(view==="dashboard"){ c.innerHTML=vDashboard(); }
+  else if(view==="wiki"){ c.innerHTML=vWiki(); bindWiki(); }
+  else if(view==="crm"){ c.innerHTML=vCRM(); bindCRM(); }
+  else if(view==="deliveries"){ c.innerHTML=vDeliveries(); bindDeliveries(); }
   else if(view==="messages"){ c.innerHTML=vMessages(); bindMessages(); }
   else if(view==="email"){ c.innerHTML=vEmail(); bindEmail(); }
   else if(view==="clients"){ c.innerHTML=vClients(); bindClients(); }
@@ -847,7 +948,7 @@ function vHome(){
   const myTasksToday = myTasks.filter(tk=>tk.due && tk.due<=today());
   const approvals = wsApprovals.filter(a=>a.status==="pending" && (isAdmin()||a.approver===session.userId));
   const notifs = computeNotifications();
-  const pinnedAnn = wsAnnouncements.filter(a=>a.type!=="meeting").sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||(b.created<a.created?-1:1)).slice(0,3);
+  const pinnedAnn = wsAnnouncements.filter(a=>!["meeting","wiki","crm","delivery"].includes(a.type)).sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||(b.created<a.created?-1:1)).slice(0,3);
   const activeObj = wsObjectives.filter(o=>o.active!==false).slice(0,3);
   return `
   <div class="panel" style="background:linear-gradient(135deg,#0F2A4A,#1B3D63);color:#fff;border:none">
@@ -932,6 +1033,7 @@ function vMessages(){
       <div id="attach-zone"></div>
       <div class="chat-input">
         <button class="btn ghost" id="msg-attach" title="Joindre un fichier" style="flex-shrink:0">${icon('plus',16)}</button>
+        <button class="btn ghost" id="msg-mic" title="Note vocale" style="flex-shrink:0">${icon('mic',16)}</button>
         <button class="btn ghost" id="msg-poll" title="Créer un sondage" style="flex-shrink:0">${icon('approve',16)}</button>
         <input type="file" id="msg-file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" style="display:none">
         <textarea id="msg-input" rows="1" placeholder="Votre message…  (mentionnez avec @)"></textarea>
@@ -973,6 +1075,9 @@ function attachmentHTML(m){
   const a=m.attachment; if(!a) return "";
   if(a.type==="image"){
     return `<img class="msg-img" src="${a.data}" alt="${esc(a.name||'image')}" data-img="${esc(a.data)}" style="max-width:240px;max-height:240px;border-radius:10px;margin-top:4px;cursor:pointer;display:block">`;
+  }
+  if(a.type==="audio"){
+    return `<div class="voice-note">${icon('mic',15)}<audio controls src="${a.data}" style="height:34px;max-width:230px"></audio>${a.dur?`<span class="muted" style="font-size:11px">${a.dur}s</span>`:""}</div>`;
   }
   return `<a class="file-chip" href="${a.data}" download="${esc(a.name||'fichier')}"><span class="file-ic">${icon('box',16)}<i>${esc(fileExtLabel(a.name,a.mime))}</i></span><span class="file-meta"><b>${esc(a.name||'fichier')}</b><span>${a.size?humanSize(a.size):""}</span></span></a>`;
 }
@@ -1136,13 +1241,42 @@ function bindMessages(){
     }catch(err){ toast("Impossible de lire ce fichier"); }
   };
   if(inp) inp.onkeydown=e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); doSend(); } };
+  const mic=el("msg-mic"); if(mic) mic.onclick=toggleRecording;
+}
+let mediaRec=null, recChunks=[], recTimer=null, recStart=0;
+async function toggleRecording(){
+  const mic=el("msg-mic");
+  if(mediaRec && mediaRec.state==="recording"){ mediaRec.stop(); return; }
+  if(!navigator.mediaDevices || !window.MediaRecorder){ return toast("Enregistrement audio non supporté par ce navigateur"); }
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    let mime="audio/webm"; if(window.MediaRecorder.isTypeSupported && !MediaRecorder.isTypeSupported(mime)){ mime= MediaRecorder.isTypeSupported("audio/mp4")?"audio/mp4":""; }
+    mediaRec = mime ? new MediaRecorder(stream, {mimeType:mime, audioBitsPerSecond:24000}) : new MediaRecorder(stream);
+    recChunks=[]; recStart=Date.now();
+    mediaRec.ondataavailable=e=>{ if(e.data.size) recChunks.push(e.data); };
+    mediaRec.onstop=async ()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      if(recTimer){ clearInterval(recTimer); recTimer=null; }
+      const dur=Math.round((Date.now()-recStart)/1000);
+      if(mic){ mic.classList.remove("recording"); mic.innerHTML=icon('mic',16); }
+      const blob=new Blob(recChunks, {type:mediaRec.mimeType||"audio/webm"});
+      if(blob.size>680*1024){ return toast("Note vocale trop longue (max ~60s)"); }
+      const data=await fileToDataURL(blob);
+      pendingAttach={ type:"audio", name:"note-vocale", mime:blob.type, size:blob.size, dur, data };
+      renderAttachZone();
+    };
+    mediaRec.start();
+    if(mic){ mic.classList.add("recording"); }
+    recTimer=setInterval(()=>{ const s=Math.round((Date.now()-recStart)/1000); if(mic) mic.innerHTML=`<span style="font-size:12px;color:#fff">● ${s}s</span>`; if(s>=60 && mediaRec.state==="recording") mediaRec.stop(); }, 250);
+    toast("Enregistrement… reclic pour arrêter");
+  }catch(e){ toast("Micro non autorisé"); }
 }
 function renderAttachZone(){
   const z=el("attach-zone"); if(!z) return;
   if(!pendingAttach){ z.innerHTML=""; return; }
   const a=pendingAttach;
-  const preview = a.type==="image" ? `<img src="${a.data}" style="height:40px;border-radius:6px">` : `<span class="file-ic">${icon('box',16)}<i>${esc(fileExtLabel(a.name,a.mime))}</i></span>`;
-  z.innerHTML=`<div class="reply-preview" style="border-left-color:var(--vert)">${preview}<div class="rp-txt">Pièce jointe : <b>${esc(a.name||'fichier')}</b>${a.size?` · ${humanSize(a.size)}`:""}</div><span class="rp-x" id="att-cancel">${icon('x',16)}</span></div>`;
+  const preview = a.type==="image" ? `<img src="${a.data}" style="height:40px;border-radius:6px">` : a.type==="audio" ? `${icon('mic',16)}<audio controls src="${a.data}" style="height:32px"></audio>` : `<span class="file-ic">${icon('box',16)}<i>${esc(fileExtLabel(a.name,a.mime))}</i></span>`;
+  z.innerHTML=`<div class="reply-preview" style="border-left-color:var(--vert)">${preview}<div class="rp-txt">${a.type==="audio"?"Note vocale":"Pièce jointe : <b>"+esc(a.name||'fichier')+"</b>"}${a.size?` · ${humanSize(a.size)}`:""}</div><span class="rp-x" id="att-cancel">${icon('x',16)}</span></div>`;
   const x=el("att-cancel"); if(x) x.onclick=()=>{ pendingAttach=null; renderAttachZone(); };
 }
 window.recallMessage=recallMessage;
@@ -1151,6 +1285,14 @@ window.recallMessage=recallMessage;
 /* Emails et signatures stockés dans ws_messages (type:"email" / "signature")
    => aucune nouvelle collection Firestore. */
 function allEmails(){ return wsMessages.filter(m=>m.type==="email"); }
+// Signature enjolivée : logo monogramme + barre terracotta + texte (charte graphique DISTRIVIA)
+function signatureBlockHTML(text){
+  if(!text) return "";
+  return `<table cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr>
+    <td style="vertical-align:top;padding-right:14px">${logoMark(46)}</td>
+    <td style="vertical-align:top;border-left:3px solid #C85E2D;padding-left:14px;font-size:13px;line-height:1.7;color:#444;white-space:pre-wrap">${linkify(esc(text))}</td>
+  </tr></table>`;
+}
 function defaultSignature(u){
   const co=(gestionState&&gestionState.settings&&gestionState.settings.company)||{};
   const company=co.name||"DISTRIVIA";
@@ -1233,7 +1375,7 @@ function emailReadHTML(e){
     <div class="muted" style="font-size:12px">${frDate(e.created)} · ${clockHM(e.created)}</div>
   </div>
   <div class="mbody">${linkify(esc(e.body||""))}</div>
-  ${e.signature?`<div class="msig">${linkify(esc(e.signature))}</div>`:""}
+  ${e.signature?`<div class="msig">${signatureBlockHTML(e.signature)}</div>`:""}
   ${e.attachment?`<div style="margin-top:14px">${attachmentHTML({attachment:e.attachment})}</div>`:""}
   ${e.draft? `<div class="row" style="margin-top:20px"><button class="btn b" data-editdraft="${esc(e._id)}">${icon('edit',14)} Continuer la rédaction</button><button class="btn r ghost" data-deldraft="${esc(e._id)}">Supprimer</button></div>`
     : `<div class="row" style="margin-top:20px;gap:8px">
@@ -1296,9 +1438,9 @@ function composeEmail(opts){
     </div>
     <label>Objet</label><input id="cm-subject" value="${esc(preSubject)}" placeholder="Objet du message">
     <label>Message</label><textarea id="cm-body" rows="8" placeholder="Votre message…">${esc(preBody)}</textarea>
-    <div style="margin-top:8px;background:var(--creme);border-radius:8px;padding:8px 10px">
-      <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Signature ajoutée automatiquement</div>
-      <div style="font-size:12.5px;color:#555;white-space:pre-wrap">${esc(sig)}</div>
+    <div style="margin-top:8px;background:var(--creme);border-radius:8px;padding:10px 12px">
+      <div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Signature ajoutée automatiquement</div>
+      ${signatureBlockHTML(sig)}
     </div>
     <div class="row" style="justify-content:space-between;margin-top:14px">
       <button class="btn ghost sm" id="cm-draft">Enregistrer le brouillon</button>
@@ -1665,7 +1807,7 @@ function bindApprovals(){
 
 /* ============ ANNONCES ============ */
 function vAnnouncements(){
-  const list=wsAnnouncements.filter(a=>a.type!=="meeting").sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||(b.created<a.created?-1:1));
+  const list=wsAnnouncements.filter(a=>!["meeting","wiki","crm","delivery"].includes(a.type)).sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||(b.created<a.created?-1:1));
   return `
   ${isAdmin()?`<div class="row" style="justify-content:flex-end;margin-bottom:14px"><button class="btn b" id="ann-new">+ Nouvelle annonce</button></div>`:""}
   ${list.length? list.map(a=>`<div class="panel" style="${a.pinned?'border-left:4px solid var(--terra)':''}">
@@ -1907,9 +2049,297 @@ function vPerformance(){
   </div>`;
 }
 
+/* ============ TABLEAU DE BORD ANALYTIQUE (BI) ============ */
+function moneyF(n){ return Math.round(n||0).toLocaleString("fr-FR").replace(/[\s\u202f\u00a0]/g,"\u00a0"); }
+function orderTotal(o){ return (o.lines||[]).reduce((a,l)=>a+(l.qty||0)*(l.price||0),0); }
+function orderPaid(o){ return (o.payments||[]).reduce((a,p)=>a+(p.amount||0),0); }
+function vDashboard(){
+  const S=gestionState||{};
+  const orders=(S.orders||[]).filter(o=>o.status!=="cancelled");
+  const products=S.products||[]; const clients=S.clients||[];
+  // KPI globaux
+  const caTotal=orders.reduce((a,o)=>a+orderTotal(o),0);
+  const encaisse=orders.reduce((a,o)=>a+Math.min(orderTotal(o),orderPaid(o)),0);
+  const impaye=orders.reduce((a,o)=>a+Math.max(0,orderTotal(o)-orderPaid(o)),0);
+  const stockValue=products.reduce((a,p)=>a+(p.stock||0)*(p.price||p.cost||0),0);
+  const stockBas=products.filter(p=>(p.stock||0)<=(p.alert||0)).length;
+  // CA des 6 derniers mois
+  const months=[]; const now=new Date();
+  for(let i=5;i>=0;i--){ const d=new Date(now.getFullYear(), now.getMonth()-i, 1); months.push({key:d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"), label:d.toLocaleDateString("fr-FR",{month:"short"}), val:0}); }
+  orders.forEach(o=>{ if(!o.date) return; const k=String(o.date).slice(0,7); const m=months.find(x=>x.key===k); if(m) m.val+=orderTotal(o); });
+  const maxMonth=Math.max(1,...months.map(m=>m.val));
+  // top produits (par quantité vendue)
+  const prodSales={};
+  orders.forEach(o=>(o.lines||[]).forEach(l=>{ const n=l.name||l.product||("#"+l.productId); prodSales[n]=(prodSales[n]||0)+(l.qty||0)*(l.price||0); }));
+  const topProd=Object.entries(prodSales).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const maxProd=Math.max(1,...topProd.map(p=>p[1]));
+  // top clients (par CA)
+  const cliSales={};
+  orders.forEach(o=>{ const n=o.clientName||o.client_name||(clients.find(c=>String(c.id)===String(o.client_id))||{}).name||"Client comptoir"; cliSales[n]=(cliSales[n]||0)+orderTotal(o); });
+  const topCli=Object.entries(cliSales).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const maxCli=Math.max(1,...topCli.map(c=>c[1]));
+  // ancienneté des impayés
+  const aging={"0-15 j":0,"15-30 j":0,"+30 j":0};
+  orders.forEach(o=>{ const reste=orderTotal(o)-orderPaid(o); if(reste>0&&o.date){ const days=Math.floor((Date.now()-new Date(o.date).getTime())/86400000); if(days<15) aging["0-15 j"]+=reste; else if(days<30) aging["15-30 j"]+=reste; else aging["+30 j"]+=reste; } });
+
+  if(!orders.length && !products.length){
+    return `<div class="panel"><h3>${icon('target')} Tableau de bord</h3><p class="empty">Aucune donnée de Gestion pour le moment. Le tableau de bord se remplira automatiquement dès que des commandes et produits seront enregistrés dans DISTRIVIA Gestion.</p></div>`;
+  }
+  return `
+  <div class="section-title">${icon('target',20)} Pilotage DISTRIVIA</div>
+  <p class="muted" style="margin-bottom:16px">Données en direct depuis DISTRIVIA Gestion · ${orders.length} commande${orders.length>1?"s":""}</p>
+  <div class="grid g4" style="margin-bottom:18px">
+    <div class="stat"><div class="v">${moneyF(caTotal)}</div><div class="l">Chiffre d'affaires (F)</div></div>
+    <div class="stat v"><div class="v">${moneyF(encaisse)}</div><div class="l">Encaissé (F)</div></div>
+    <div class="stat r"><div class="v">${moneyF(impaye)}</div><div class="l">Impayés (F)</div></div>
+    <div class="stat t"><div class="v">${moneyF(stockValue)}</div><div class="l">Valeur du stock (F)</div></div>
+  </div>
+  <div class="grid g2">
+    <div class="panel">
+      <h3>${icon('target',16)} Chiffre d'affaires — 6 derniers mois</h3>
+      <div class="chart-bars">
+        ${months.map(m=>`<div class="cb"><div class="val">${m.val?moneyF(m.val/1000)+"k":""}</div><div class="bar ${m.val===maxMonth&&m.val>0?'t':''}" style="height:${Math.max(2,Math.round(m.val/maxMonth*160))}px"></div><div class="lab">${m.label}</div></div>`).join("")}
+      </div>
+    </div>
+    <div class="panel">
+      <h3>${icon('money',16)} Ancienneté des impayés</h3>
+      ${impaye>0? `<div class="donut-wrap">${donutSVG([["0-15 j",aging["0-15 j"],"#2E6B3E"],["15-30 j",aging["15-30 j"],"#C9962B"],["+30 j",aging["+30 j"],"#A33B3B"]])}
+        <div class="donut-leg">
+          ${[["0-15 j","#2E6B3E"],["15-30 j","#C9962B"],["+30 j","#A33B3B"]].map(([k,c])=>`<div class="dl"><span class="sw" style="background:${c}"></span>${k} : <b style="margin-left:4px">${moneyF(aging[k])} F</b></div>`).join("")}
+        </div></div>` : `<p class="empty">Aucun impayé. Trésorerie saine 👍</p>`}
+    </div>
+    <div class="panel">
+      <h3>${icon('box',16)} Top 5 produits (par CA)</h3>
+      <div class="bi-list">
+        ${topProd.length? topProd.map(([n,v],i)=>`<div class="bil"><span class="rank">${i+1}</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(n)}</div><div class="barwrap"><i style="width:${Math.round(v/maxProd*100)}%"></i></div></div><b style="font-size:12.5px;white-space:nowrap">${moneyF(v)} F</b></div>`).join("") : `<p class="empty">Aucune vente enregistrée.</p>`}
+      </div>
+    </div>
+    <div class="panel">
+      <h3>${icon('users',16)} Top 5 clients (par CA)</h3>
+      <div class="bi-list">
+        ${topCli.length? topCli.map(([n,v],i)=>`<div class="bil"><span class="rank">${i+1}</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(n)}</div><div class="barwrap"><i style="width:${Math.round(v/maxCli*100)}%"></i></div></div><b style="font-size:12.5px;white-space:nowrap">${moneyF(v)} F</b></div>`).join("") : `<p class="empty">Aucun client avec commande.</p>`}
+      </div>
+    </div>
+  </div>
+  ${stockBas? `<div class="panel" style="border-left:4px solid var(--rouge)"><h3>${icon('box',16)} Alerte stock</h3><p style="font-size:14px">${stockBas} produit${stockBas>1?"s":""} sous le seuil d'alerte. <a onclick="goView('notifications')" style="cursor:pointer;font-weight:700">Voir les détails →</a></p></div>`:""}`;
+}
+function donutSVG(parts){
+  const total=parts.reduce((a,p)=>a+p[1],0)||1;
+  let acc=0; const r=54, c=2*Math.PI*r, cx=64, cy=64;
+  const segs=parts.map(([k,v,col])=>{ const frac=v/total; const dash=frac*c; const seg=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${col}" stroke-width="18" stroke-dasharray="${dash} ${c-dash}" stroke-dashoffset="${-acc*c}" transform="rotate(-90 ${cx} ${cy})"/>`; acc+=frac; return seg; });
+  return `<svg width="128" height="128" viewBox="0 0 128 128">${segs.join("")}<circle cx="${cx}" cy="${cy}" r="34" fill="var(--blanc)"/><text x="64" y="60" text-anchor="middle" font-size="13" font-weight="800" fill="#0F2A4A">Total</text><text x="64" y="76" text-anchor="middle" font-size="12" fill="#888">${moneyF(total/1000)}k F</text></svg>`;
+}
+
+/* ============ BASE DE CONNAISSANCES / WIKI ============ */
+// Pages stockées dans ws_announcements (type:"wiki") => pas de nouvelle collection.
+let activeWiki=null; let wikiCat="Toutes";
+const WIKI_CATS=["Procédures","Fournisseurs","Prix & tarifs","Onboarding","Autre"];
+function wikiPages(){ return wsAnnouncements.filter(a=>a.type==="wiki").sort((a,b)=>(b.updated||b.created)<(a.updated||a.created)?1:-1); }
+function vWiki(){
+  const pages=wikiPages();
+  const cats=["Toutes",...WIKI_CATS];
+  const filtered=wikiCat==="Toutes"?pages:pages.filter(p=>p.cat===wikiCat);
+  const active=filtered.find(p=>p._id===activeWiki)||filtered[0]||null;
+  if(active) activeWiki=active._id;
+  return `
+  <div class="row" style="justify-content:space-between;margin-bottom:14px">
+    <div class="section-title">${icon('megaphone',20)} Base de connaissances</div>
+    <button class="btn b" id="wiki-new">${icon('plus',16)} Nouvelle page</button>
+  </div>
+  <div class="row" style="gap:6px;margin-bottom:14px">
+    ${cats.map(c=>`<button class="btn ${wikiCat===c?'':'ghost'} sm" data-wcat="${esc(c)}">${esc(c)}</button>`).join("")}
+  </div>
+  <div class="mail-shell" style="height:calc(100vh - 220px)">
+    <div class="mail-list" style="width:300px">
+      ${filtered.length? filtered.map(p=>`<div class="mail-row ${active&&active._id===p._id?'active':''}" data-wiki="${esc(p._id)}">
+        <div class="mr-subj">${esc(p.title||"Sans titre")}</div>
+        <div class="mr-prev">${esc((p.body||"").replace(/\n/g," ").slice(0,70))}</div>
+        <div class="muted" style="font-size:11px;margin-top:3px">${esc(p.cat||"Autre")} · ${esc(userName(p.author))} · ${timeAgo(p.updated||p.created)}</div>
+      </div>`).join("") : `<div class="empty" style="padding:30px">Aucune page dans cette catégorie.</div>`}
+    </div>
+    <div class="mail-read">
+      ${active? `
+        <div class="row" style="justify-content:space-between;align-items:flex-start">
+          <div><div class="mh-subj" style="margin-bottom:4px">${esc(active.title)}</div><span class="pill doing">${esc(active.cat||"Autre")}</span></div>
+          <div class="row">
+            <button class="btn ghost sm" data-wedit="${esc(active._id)}">${icon('edit',14)} Modifier</button>
+            <button class="btn r ghost sm" data-wdel="${esc(active._id)}">${icon('x',14)}</button>
+          </div>
+        </div>
+        <div class="muted" style="font-size:12px;margin:10px 0 16px">Mis à jour par ${esc(userName(active.author))} · ${frDate(active.updated||active.created)}</div>
+        <div class="mbody">${linkify(esc(active.body||""))}</div>
+      ` : `<div class="mail-empty">Sélectionnez ou créez une page.</div>`}
+    </div>
+  </div>`;
+}
+function bindWiki(){
+  document.querySelectorAll("[data-wcat]").forEach(b=> b.onclick=()=>{ wikiCat=b.dataset.wcat; activeWiki=null; renderMain(); });
+  document.querySelectorAll("[data-wiki]").forEach(r=> r.onclick=()=>{ activeWiki=r.dataset.wiki; renderMain(); });
+  const nw=el("wiki-new"); if(nw) nw.onclick=()=> wikiDialog(null);
+  document.querySelectorAll("[data-wedit]").forEach(b=> b.onclick=()=>{ const p=wikiPages().find(x=>x._id===b.dataset.wedit); wikiDialog(p); });
+  document.querySelectorAll("[data-wdel]").forEach(b=> b.onclick=()=> confirmDialog("Supprimer cette page ?", async ()=>{ await wsDelete("ws_announcements", b.dataset.wdel); activeWiki=null; toast("Page supprimée"); }, {danger:true, ok:"Supprimer"}));
+}
+function wikiDialog(p){
+  openModal(`<div class="row" style="justify-content:space-between"><h3>${icon('megaphone',16)} ${p?"Modifier la page":"Nouvelle page"}</h3><button class="x" onclick="closeModal()">×</button></div>
+    <label>Titre</label><input id="wk-title" value="${p?esc(p.title):""}" placeholder="Ex. Procédure de retour client">
+    <label>Catégorie</label><select id="wk-cat">${WIKI_CATS.map(c=>`<option ${p&&p.cat===c?"selected":""}>${c}</option>`).join("")}</select>
+    <label>Contenu</label><textarea id="wk-body" rows="12" placeholder="Rédigez la procédure, les informations, les contacts…">${p?esc(p.body):""}</textarea>
+    <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn" id="wk-save">${p?"Enregistrer":"Créer la page"}</button></div>`);
+  el("wk-save").onclick=async ()=>{
+    const title=el("wk-title").value.trim(); if(!title) return toast("Titre requis");
+    const data={ type:"wiki", title, cat:el("wk-cat").value, body:el("wk-body").value, author:session.userId, updated:nowISO() };
+    if(p){ await wsUpdate("ws_announcements", p._id, data); toast("Page mise à jour ✓"); }
+    else { await wsAdd("ws_announcements", { id:uid(), ...data, created:nowISO() }); toast("Page créée ✓"); }
+    closeModal();
+  };
+}
+
+/* ============ MINI-CRM / RELANCES CLIENTS ============ */
+// Stocké dans ws_announcements (type:"crm") => pas de nouvelle collection.
+const CRM_STATUS={todo:"À relancer", inprog:"En cours", won:"Converti", lost:"Perdu"};
+let crmFilter="all";
+function crmList(){ return wsAnnouncements.filter(a=>a.type==="crm").sort((a,b)=>{ const da=a.nextDate||"9999", db=b.nextDate||"9999"; return da<db?-1:da>db?1:0; }); }
+function vCRM(){
+  const all=crmList();
+  const list = crmFilter==="all"?all : crmFilter==="overdue"? all.filter(c=>c.status!=="won"&&c.status!=="lost"&&c.nextDate&&c.nextDate<today()) : all.filter(c=>c.status===crmFilter);
+  const counts={ todo:all.filter(c=>c.status==="todo").length, inprog:all.filter(c=>c.status==="inprog").length, won:all.filter(c=>c.status==="won").length, overdue:all.filter(c=>c.status!=="won"&&c.status!=="lost"&&c.nextDate&&c.nextDate<today()).length };
+  return `
+  <div class="row" style="justify-content:space-between;margin-bottom:14px">
+    <div class="section-title">${icon('users',20)} Relances clients</div>
+    <button class="btn b" id="crm-new">${icon('plus',16)} Nouvelle relance</button>
+  </div>
+  <div class="grid g4" style="margin-bottom:16px">
+    <div class="stat"><div class="v">${counts.todo}</div><div class="l">À relancer</div></div>
+    <div class="stat t"><div class="v">${counts.inprog}</div><div class="l">En cours</div></div>
+    <div class="stat r"><div class="v">${counts.overdue}</div><div class="l">En retard</div></div>
+    <div class="stat v"><div class="v">${counts.won}</div><div class="l">Convertis</div></div>
+  </div>
+  <div class="row" style="gap:6px;margin-bottom:12px">
+    ${[["all","Toutes"],["overdue","En retard"],["todo","À relancer"],["inprog","En cours"],["won","Convertis"]].map(([k,l])=>`<button class="btn ${crmFilter===k?'':'ghost'} sm" data-crmf="${k}">${l}</button>`).join("")}
+  </div>
+  <div class="panel" style="padding:6px 16px">
+    ${list.length? list.map(c=>{
+      const overdue=c.status!=="won"&&c.status!=="lost"&&c.nextDate&&c.nextDate<today();
+      const pillCls = c.status==="won"?"approved":c.status==="lost"?"rejected":c.status==="inprog"?"doing":"pending";
+      return `<div class="rank-row" style="cursor:pointer" data-crm="${esc(c._id)}">
+        <div class="avatar sm">${initials(c.client||"C")}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700">${esc(c.client||"Client")} ${c.phone?`<span class="muted" style="font-weight:400;font-size:12px">· ${esc(c.phone)}</span>`:""}</div>
+          <div class="muted" style="font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc((c.note||"").slice(0,70)||"—")}</div>
+        </div>
+        <div style="text-align:right">
+          <span class="pill ${pillCls}">${CRM_STATUS[c.status]||"À relancer"}</span>
+          <div class="muted" style="font-size:11px;margin-top:3px;${overdue?'color:var(--rouge);font-weight:700':''}">${c.nextDate?("Relance : "+frDate(c.nextDate)):"Pas de date"}</div>
+        </div>
+      </div>`;
+    }).join("") : `<p class="empty">Aucune relance. Cliquez « Nouvelle relance » pour suivre un client.</p>`}
+  </div>`;
+}
+function bindCRM(){
+  document.querySelectorAll("[data-crmf]").forEach(b=> b.onclick=()=>{ crmFilter=b.dataset.crmf; renderMain(); });
+  const nw=el("crm-new"); if(nw) nw.onclick=()=> crmDialog(null);
+  document.querySelectorAll("[data-crm]").forEach(r=> r.onclick=()=>{ const c=crmList().find(x=>x._id===r.dataset.crm); crmDialog(c); });
+}
+function crmDialog(c){
+  const clientOpts=(gestionState&&gestionState.clients||[]).map(cl=>`<option value="${esc(cl.name)}">${esc(cl.name)}</option>`).join("");
+  openModal(`<div class="row" style="justify-content:space-between"><h3>${icon('users',16)} ${c?"Relance client":"Nouvelle relance"}</h3><button class="x" onclick="closeModal()">×</button></div>
+    <label>Client</label><input id="crm-client" list="crm-clients" value="${c?esc(c.client):""}" placeholder="Nom du client">
+    <datalist id="crm-clients">${clientOpts}</datalist>
+    <div class="grid g2">
+      <div><label>Téléphone</label><input id="crm-phone" value="${c?esc(c.phone||""):""}" placeholder="+221 …"></div>
+      <div><label>Statut</label><select id="crm-status">${Object.entries(CRM_STATUS).map(([k,v])=>`<option value="${k}" ${c&&c.status===k?"selected":""}>${v}</option>`).join("")}</select></div>
+      <div><label>Dernier contact</label><input type="date" id="crm-last" value="${c?c.lastDate||"":""}"></div>
+      <div><label>Prochaine relance</label><input type="date" id="crm-next" value="${c?c.nextDate||"":""}"></div>
+    </div>
+    <label>Notes</label><textarea id="crm-note" rows="4" placeholder="Historique, besoin du client, montant potentiel…">${c?esc(c.note||""):""}</textarea>
+    <div class="row" style="justify-content:space-between;margin-top:14px">
+      ${c?`<button class="btn r sm" id="crm-del">Supprimer</button>`:"<span></span>"}
+      <button class="btn" id="crm-save">${c?"Enregistrer":"Créer"}</button>
+    </div>`);
+  el("crm-save").onclick=async ()=>{
+    const client=el("crm-client").value.trim(); if(!client) return toast("Nom du client requis");
+    const data={ type:"crm", client, phone:el("crm-phone").value.trim(), status:el("crm-status").value, lastDate:el("crm-last").value||"", nextDate:el("crm-next").value||"", note:el("crm-note").value, author:session.userId, updated:nowISO() };
+    if(c){ await wsUpdate("ws_announcements", c._id, data); toast("Relance mise à jour ✓"); }
+    else { await wsAdd("ws_announcements", { id:uid(), ...data, created:nowISO() }); toast("Relance créée ✓"); }
+    closeModal();
+  };
+  if(c) el("crm-del").onclick=()=> confirmDialog("Supprimer cette relance ?", async ()=>{ await wsDelete("ws_announcements", c._id); closeModal(); toast("Supprimée"); }, {danger:true, ok:"Supprimer"});
+}
+
+/* ============ SUIVI DES LIVRAISONS ============ */
+// Stocké dans ws_announcements (type:"delivery") => pas de nouvelle collection.
+const DLV_STATUS=[["prep","À préparer"],["route","En route"],["done","Livrée"]];
+function deliveriesList(){ return wsAnnouncements.filter(a=>a.type==="delivery").sort((a,b)=>(b.created<a.created?-1:1)); }
+function vDeliveries(){
+  const all=deliveriesList();
+  const cols=DLV_STATUS.map(([st,label])=>({st,label,items:all.filter(d=>(d.status||"prep")===st)}));
+  return `
+  <div class="row" style="justify-content:space-between;margin-bottom:14px">
+    <div class="section-title">${icon('box',20)} Suivi des livraisons</div>
+    <button class="btn b" id="dlv-new">${icon('plus',16)} Nouvelle livraison</button>
+  </div>
+  <div class="kanban">
+    ${cols.map(col=>`
+      <div class="kcol" data-dlvcol="${col.st}">
+        <h4>${col.label} <span class="ct">${col.items.length}</span></h4>
+        ${col.items.map(d=>`
+          <div class="kcard" draggable="true" data-dlv="${esc(d._id)}">
+            <div style="font-weight:700;font-size:13.5px">${esc(d.client||"Client")}</div>
+            ${d.address?`<div class="muted" style="font-size:12px;margin-top:2px">${icon('home',12)} ${esc(d.address)}</div>`:""}
+            <div class="row" style="gap:6px;margin-top:7px">
+              ${d.orderRef?`<span class="pill todo">${esc(d.orderRef)}</span>`:""}
+              ${d.driver?`<span class="pill doing">${icon('users',11)} ${esc(userName(d.driver)||d.driver)}</span>`:""}
+            </div>
+            ${d.address?`<a class="btn ghost sm" style="margin-top:8px" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(d.address)}" target="_blank" rel="noopener">${icon('home',12)} Voir sur la carte</a>`:""}
+          </div>`).join("")||`<p class="muted" style="font-size:12px;padding:8px">—</p>`}
+      </div>`).join("")}
+  </div>
+  <p class="muted" style="font-size:12px;margin-top:10px">Glissez une livraison d'une colonne à l'autre pour changer son statut. Cliquez une carte pour la modifier.</p>`;
+}
+function bindDeliveries(){
+  const nw=el("dlv-new"); if(nw) nw.onclick=()=> deliveryDialog(null);
+  document.querySelectorAll("[data-dlv]").forEach(card=>{
+    card.onclick=()=>{ const d=deliveriesList().find(x=>x._id===card.dataset.dlv); deliveryDialog(d); };
+    card.ondragstart=e=>{ e.dataTransfer.setData("id", card.dataset.dlv); };
+  });
+  document.querySelectorAll("[data-dlvcol]").forEach(col=>{
+    col.ondragover=e=>e.preventDefault();
+    col.ondrop=async e=>{ e.preventDefault(); const id=e.dataTransfer.getData("id"); if(id) await wsUpdate("ws_announcements", id, {status:col.dataset.dlvcol}); };
+  });
+}
+function deliveryDialog(d){
+  const drivers=users.filter(u=>u.active!==false).map(u=>`<option value="${u.id}" ${d&&d.driver===u.id?"selected":""}>${esc(u.name)}</option>`).join("");
+  const clientOpts=(gestionState&&gestionState.clients||[]).map(cl=>`<option value="${esc(cl.name)}">${esc(cl.name)}</option>`).join("");
+  openModal(`<div class="row" style="justify-content:space-between"><h3>${icon('box',16)} ${d?"Modifier la livraison":"Nouvelle livraison"}</h3><button class="x" onclick="closeModal()">×</button></div>
+    <label>Client</label><input id="dlv-client" list="dlv-clients" value="${d?esc(d.client||""):""}" placeholder="Nom du client">
+    <datalist id="dlv-clients">${clientOpts}</datalist>
+    <label>Adresse de livraison</label><input id="dlv-address" value="${d?esc(d.address||""):""}" placeholder="Quartier, rue, repère…">
+    <div class="grid g2">
+      <div><label>Chauffeur / livreur</label><select id="dlv-driver"><option value="">—</option>${drivers}</select></div>
+      <div><label>Statut</label><select id="dlv-status">${DLV_STATUS.map(([k,v])=>`<option value="${k}" ${d&&d.status===k?"selected":""}>${v}</option>`).join("")}</select></div>
+      <div><label>N° commande (facultatif)</label><input id="dlv-order" value="${d?esc(d.orderRef||""):""}" placeholder="CMD-0042"></div>
+      <div><label>Date prévue</label><input type="date" id="dlv-date" value="${d?d.date||"":""}"></div>
+    </div>
+    <label>Note (facultatif)</label><textarea id="dlv-note" rows="2" placeholder="Instructions, contact sur place…">${d?esc(d.note||""):""}</textarea>
+    <div class="row" style="justify-content:space-between;margin-top:14px">
+      ${d?`<button class="btn r sm" id="dlv-del">Supprimer</button>`:"<span></span>"}
+      <button class="btn" id="dlv-save">${d?"Enregistrer":"Créer"}</button>
+    </div>`);
+  el("dlv-save").onclick=async ()=>{
+    const client=el("dlv-client").value.trim(); if(!client) return toast("Nom du client requis");
+    const data={ type:"delivery", client, address:el("dlv-address").value.trim(), driver:el("dlv-driver").value?+el("dlv-driver").value:"", status:el("dlv-status").value, orderRef:el("dlv-order").value.trim(), date:el("dlv-date").value||"", note:el("dlv-note").value, author:session.userId, updated:nowISO() };
+    if(d){ await wsUpdate("ws_announcements", d._id, data); toast("Livraison mise à jour ✓"); }
+    else { await wsAdd("ws_announcements", { id:uid(), ...data, created:nowISO() }); toast("Livraison créée ✓"); }
+    closeModal();
+  };
+  if(d) el("dlv-del").onclick=()=> confirmDialog("Supprimer cette livraison ?", async ()=>{ await wsDelete("ws_announcements", d._id); closeModal(); toast("Supprimée"); }, {danger:true, ok:"Supprimer"});
+}
+
 /* ============ BOOT ============ */
 (async function boot(){
   applyTheme();
+  // PWA : enregistre le service worker s'il est présent (sans bloquer si absent)
+  if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }
   // Raccourci clavier global : Ctrl/Cmd + K = recherche
   document.addEventListener("keydown", e=>{
     if((e.ctrlKey||e.metaKey) && (e.key==="k"||e.key==="K")){ if(session){ e.preventDefault(); openCmdK(); } }
