@@ -383,18 +383,41 @@
   @media(max-width:920px){ .mail-folders{width:64px;} .mfolder span.mlabel{display:none;} .mail-list{width:200px;} }
   @media(max-width:680px){ .mail-shell{flex-direction:column;height:auto;} .mail-folders{width:100%;display:flex;overflow-x:auto;border-right:none;border-bottom:1px solid #eee;} .mail-compose-btn{display:none;} .mail-list{width:100%;max-height:40vh;} }
 
+  /* overlay + navigation mobile */
+  .sb-overlay{display:none;}
+  .bottom-nav{display:none;}
   @media(max-width:860px){
-    .sidebar{transform:translateX(-100%);}
+    .sidebar{transform:translateX(-100%); width:270px; z-index:60;}
     .sidebar.open{transform:translateX(0);}
     .main{margin-left:0;}
+    .topbar{padding-top:calc(12px + env(safe-area-inset-top));}
     .topbar .menu-btn{display:block;}
+    .topbar .search-fake{display:none;}
     .g2,.g3,.g4{grid-template-columns:1fr 1fr;}
-    .kanban{grid-template-columns:1fr; }
-    .chat-shell{flex-direction:column; height:auto;}
+    .kanban{grid-template-columns:1fr;}
+    .chat-shell,.mail-shell{flex-direction:column; height:auto;}
     .chat-side{width:100%; flex-direction:row; overflow-x:auto; border-right:none; border-bottom:1px solid #eee;}
     .chat-body{height:50vh;}
+    .grid.g2,.grid.g4{gap:10px;}
+    .content{padding:16px 14px 84px;}            /* place pour la bottom-nav */
+    .msg .actions{display:flex; position:static; background:none; border:none; box-shadow:none; margin-top:4px; opacity:.8;}
+    .msg.mine .actions{justify-content:flex-end;}
+    .sb-overlay{display:block; position:fixed; inset:0; background:rgba(10,18,30,.5); z-index:55; opacity:0; pointer-events:none; transition:opacity .25s;}
+    .sb-overlay.show{opacity:1; pointer-events:auto;}
+    .bottom-nav{display:flex; position:fixed; bottom:0; left:0; right:0; height:64px; background:#fff; border-top:1px solid #E8E2D4; z-index:45; padding-bottom:env(safe-area-inset-bottom); box-shadow:0 -4px 20px rgba(15,42,74,.08);}
+    .bottom-nav button{flex:1; background:none; border:none; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; color:var(--gris); cursor:pointer; padding:6px 0;}
+    .bottom-nav button i{font-style:normal; font-size:10.5px; font-weight:600;}
+    .bottom-nav button.active{color:var(--terra);}
+    body.dark .bottom-nav{background:#16263a; border-color:#22344a;}
+    body.dark .topbar .menu-btn{color:#E8EDF3;}
   }
-  @media(max-width:520px){ .g2,.g3,.g4{grid-template-columns:1fr;} }
+  @media(max-width:520px){
+    .g2,.g3,.g4{grid-template-columns:1fr;}
+    .mail-list{width:100% !important; max-height:38vh;}
+    .topbar h2{font-size:16px;}
+    .modal{max-width:96vw;}
+    .btn{padding:11px 16px;}        /* cibles tactiles plus grandes */
+  }
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -841,8 +864,13 @@ function render(){
       </div>
       <div class="content" id="content"></div>
     </div>
+    <div class="sb-overlay ${sbOpen?'show':''}" onclick="toggleSb()"></div>
+    <nav class="bottom-nav">
+      ${[["home","Accueil","home"],["messages","Messages","chat"],["email","Email","inbox"],["tasks","Tâches","task"],["__more","Menu","users"]].map(n=>`<button class="${n[0]==='__more'?'':(view===n[0]?'active':'')}" data-bnav="${n[0]}"><span>${icon(n[2],20)}</span><i>${n[1]}</i></button>`).join("")}
+    </nav>
   </div>`;
   document.querySelectorAll("[data-nav]").forEach(b=> b.onclick = ()=>{ view=b.dataset.nav; sbOpen=false; render(); });
+  document.querySelectorAll("[data-bnav]").forEach(b=> b.onclick = ()=>{ if(b.dataset.bnav==="__more"){ toggleSb(); } else { view=b.dataset.bnav; sbOpen=false; render(); } });
   const st=el("sound-toggle"); if(st) st.onclick=()=>{ soundOn=!soundOn; try{localStorage.setItem("distrivia-ws-sound", soundOn?"1":"0");}catch(e){} if(soundOn) playBeep(); render(); };
   const nt=el("notif-toggle"); if(nt) nt.onclick=()=>{ if(notifOn){ notifOn=false; try{localStorage.setItem("distrivia-ws-notif","0");}catch(e){} render(); } else requestNotifPerm(); };
   // statut de présence
