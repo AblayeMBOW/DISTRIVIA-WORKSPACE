@@ -1,6 +1,6 @@
 {
   "name": "DISTRIVIA Workspace",
-  "short_name": "DISTRIVIA",
+  "short_name": "Workspace",
   "description": "Espace de travail interne de l'équipe DISTRIVIA",
   "start_url": "./",
   "scope": "./",
@@ -9,8 +9,8 @@
   "background_color": "#0F2A4A",
   "theme_color": "#0F2A4A",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "icon-ws-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-ws-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-ws-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
