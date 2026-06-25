@@ -418,6 +418,68 @@
     .modal{max-width:96vw;}
     .btn{padding:11px 16px;}        /* cibles tactiles plus grandes */
   }
+  /* ===================== INTERFACE MOBILE DÉDIÉE ===================== */
+  .m-app{display:flex; flex-direction:column; height:100vh; height:100dvh; background:var(--creme);}
+  .m-top{display:flex; align-items:center; gap:10px; padding:calc(10px + env(safe-area-inset-top)) 14px 10px; background:var(--bleu); color:#fff; flex-shrink:0; box-shadow:0 2px 12px rgba(15,42,74,.25); z-index:5;}
+  .m-top .m-logo{flex-shrink:0; display:flex;}
+  .m-top .m-ttl{flex:1; line-height:1.1; min-width:0;}
+  .m-top .m-ttl b{display:block; font-size:17px; font-weight:800; letter-spacing:.3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .m-top .m-ttl i{font-style:normal; font-size:11px; color:#9FB2C9; letter-spacing:2px; text-transform:uppercase;}
+  .m-top .m-back{background:rgba(255,255,255,.12); border:none; color:#fff; width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;}
+  .m-top .m-actions{display:flex; gap:4px;}
+  .m-top .m-ico{position:relative; background:none; border:none; color:#fff; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer;}
+  .m-top .m-ico:active{background:rgba(255,255,255,.15);}
+  .m-content{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:16px 14px calc(16px + env(safe-area-inset-bottom)); background:var(--creme);}
+  .m-tabs{display:flex; flex-shrink:0; background:#fff; border-top:1px solid #E8E2D4; padding-bottom:env(safe-area-inset-bottom); box-shadow:0 -3px 16px rgba(15,42,74,.08); z-index:5;}
+  .m-tabs button{flex:1; background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:3px; padding:9px 0 8px; color:var(--gris); cursor:pointer; transition:color .15s;}
+  .m-tabs button i{font-style:normal; font-size:10.5px; font-weight:700;}
+  .m-tabs button.active{color:var(--terra);}
+  .m-tabs .mt-ic{position:relative; display:flex;}
+  .m-tabs .mt-badge{position:absolute; top:-5px; right:-9px; background:var(--terra); color:#fff; font-size:9px; font-weight:800; min-width:15px; height:15px; border-radius:8px; display:flex; align-items:center; justify-content:center; padding:0 3px;}
+  /* accueil mobile */
+  .m-hero{background:linear-gradient(135deg,#0F2A4A,#26517f); color:#fff; border-radius:18px; padding:20px; margin-bottom:18px; box-shadow:0 8px 24px rgba(15,42,74,.18);}
+  .m-hero .m-hi{font-size:14px; color:#C9D4E2;}
+  .m-hero .m-name{font-size:26px; font-weight:800; margin-bottom:14px;}
+  .m-quick{display:flex; gap:10px;}
+  .m-qchip{flex:1; background:rgba(255,255,255,.12); border-radius:12px; padding:10px; text-align:center; cursor:pointer;}
+  .m-qchip b{display:block; font-size:22px; font-weight:800;}
+  .m-qchip span{font-size:11px; color:#C9D4E2;}
+  .m-grid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;}
+  .m-tile{background:#fff; border:none; border-radius:16px; padding:16px 6px 12px; display:flex; flex-direction:column; align-items:center; gap:9px; cursor:pointer; box-shadow:0 3px 12px rgba(15,42,74,.07); transition:transform .12s;}
+  .m-tile:active{transform:scale(.94);}
+  .m-tile-ic{position:relative; width:50px; height:50px; border-radius:14px; background:var(--creme); color:var(--bleu); display:flex; align-items:center; justify-content:center;}
+  .m-tile-badge{position:absolute; top:-6px; right:-6px; background:var(--terra); color:#fff; font-size:10px; font-weight:800; min-width:18px; height:18px; border-radius:9px; display:flex; align-items:center; justify-content:center; padding:0 4px; border:2px solid #fff;}
+  .m-tile-lab{font-size:11.5px; font-weight:600; color:var(--anthra); text-align:center; line-height:1.2;}
+  /* feuille "Plus" */
+  .m-sheet-bg{position:fixed; inset:0; background:rgba(10,18,30,.5); z-index:130; display:flex; align-items:flex-end;}
+  .m-sheet{background:var(--creme); width:100%; max-height:88vh; overflow-y:auto; border-radius:20px 20px 0 0; padding:8px 16px calc(20px + env(safe-area-inset-bottom)); animation:sheetUp .25s ease;}
+  @keyframes sheetUp{from{transform:translateY(100%);} to{transform:none;}}
+  .m-sheet-head{display:flex; align-items:center; gap:12px; padding:12px 0 14px; position:sticky; top:0; background:var(--creme);}
+  .m-sheet-sec{font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:1px; color:var(--gris); margin:14px 0 8px;}
+  .m-status-row{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .m-status{display:flex; align-items:center; gap:8px; background:#fff; border:1px solid #E8E2D4; border-radius:10px; padding:11px 12px; font-size:13.5px; font-weight:600; cursor:pointer; color:var(--anthra);}
+  .m-status.on{border-color:var(--terra); box-shadow:0 0 0 1px var(--terra);}
+  .m-sheet-list{display:flex; flex-direction:column; gap:2px;}
+  .m-sheet-item{display:flex; align-items:center; gap:12px; background:#fff; border:none; border-radius:10px; padding:14px; font-size:14.5px; font-weight:600; color:var(--anthra); cursor:pointer; text-align:left;}
+  .m-sheet-item:active{background:var(--creme);}
+  /* adaptations des vues existantes en plein écran mobile */
+  .m-content .chat-shell,.m-content .mail-shell{flex-direction:column; height:calc(100dvh - 230px); min-height:340px; box-shadow:none; border-radius:14px;}
+  .m-content .chat-side,.m-content .mail-folders{width:100%; flex-direction:row; overflow-x:auto; border-right:none; border-bottom:1px solid #eee; flex-shrink:0;}
+  .m-content .mail-list{width:100% !important; max-height:34vh;}
+  .m-content .chat-body{flex:1; height:auto;}
+  .m-content .mail-compose-btn{display:block;}
+  .m-content .kanban{grid-template-columns:1fr; gap:14px;}
+  .m-content .grid.g2,.m-content .grid.g3,.m-content .grid.g4{grid-template-columns:1fr;}
+  .m-content table{display:block; overflow-x:auto; white-space:nowrap;}
+  .m-content .section-title{font-size:17px;}
+  .m-content .msg .actions{display:flex; position:static; background:none; border:none; box-shadow:none; margin-top:4px; opacity:.85;}
+  body.dark .m-app,body.dark .m-content{background:#0A1521;}
+  body.dark .m-tile,body.dark .m-tabs{background:#16263a;}
+  body.dark .m-sheet{background:#0E1B2A;}
+  body.dark .m-sheet-head{background:#0E1B2A;}
+  body.dark .m-sheet-item,body.dark .m-status{background:#16263a; color:#E8EDF3; border-color:#22344a;}
+  body.dark .m-tile-lab{color:#E8EDF3;}
+  body.dark .m-tile-ic{background:#22344a; color:#C9D4E2;}
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -829,9 +891,12 @@ const NAV = [
 ];
 const VIEW_TITLES = {home:"Accueil",dashboard:"Tableau de bord analytique",messages:"Messagerie d'équipe",email:"Email",clients:"Messages clients",crm:"Relances clients (CRM)",meeting:"Salle de réunion",tasks:"Tâches",deliveries:"Suivi des livraisons",calendar:"Calendrier d'équipe",wiki:"Base de connaissances",approvals:"Validations & approbations",announcements:"Annonces internes",objectives:"Objectifs d'équipe",performance:"Performance de l'équipe",leave:"Congés & absences",team:"Annuaire de l'équipe",notifications:"Notifications"};
 
+function isMobile(){ return window.matchMedia && window.matchMedia("(max-width: 760px)").matches; }
+let mNavTab = "home";          // onglet actif de la barre du bas
 function render(){
   const root=el("root");
   if(!session){ root.innerHTML=vLogin(); bindLogin(); return; }
+  if(isMobile()){ return renderMobile(); }
   root.innerHTML = `
   <div class="shell">
     <aside class="sidebar ${sbOpen?'open':''}" id="sidebar">
@@ -888,6 +953,114 @@ function render(){
 function toggleTheme(){ theme = theme==="dark"?"light":"dark"; try{localStorage.setItem("distrivia-ws-theme",theme);}catch(e){} applyTheme(); render(); }
 function applyTheme(){ document.body.classList.toggle("dark", theme==="dark"); }
 
+/* ============ INTERFACE MOBILE DÉDIÉE ============ */
+// Onglets de la barre du bas
+const M_TABS = [["home","Accueil","home"],["messages","Messages","chat"],["email","Email","inbox"],["tasks","Tâches","task"],["__more","Plus","users"]];
+// Tuiles de l'écran d'accueil mobile (toutes les sections)
+const M_TILES = [
+  ["dashboard","Tableau de bord","target"],["messages","Messagerie","chat"],["email","Email","inbox"],
+  ["clients","Clients","inbox"],["crm","Relances","users"],["meeting","Réunion","video"],
+  ["tasks","Tâches","task"],["deliveries","Livraisons","box"],["calendar","Calendrier","clock"],
+  ["wiki","Connaissances","megaphone"],["approvals","Validations","approve"],["announcements","Annonces","megaphone"],
+  ["objectives","Objectifs","target"],["performance","Performance","target"],["leave","Congés","leave"],
+  ["team","Annuaire","users"],["notifications","Notifications","bell"]
+];
+function mBadge(v){
+  if(v==="messages") return unreadCount();
+  if(v==="email") return emailUnreadCount();
+  if(v==="tasks") return myTasksTodo();
+  if(v==="clients") return webThreads.filter(t=>t.unreadForAdmin).length;
+  if(v==="approvals") return pendingApprovals();
+  if(v==="notifications") return computeNotifications().filter(x=>x.urgent).length;
+  return 0;
+}
+function renderMobile(){
+  const root=el("root");
+  const onHome = view==="home";
+  const title = VIEW_TITLES[view]||"";
+  root.innerHTML = `
+  <div class="m-app">
+    <header class="m-top">
+      ${onHome
+        ? `<span class="m-logo">${logoMark(30)}</span><div class="m-ttl"><b>DISTRIVIA</b><i>Workspace</i></div>`
+        : `<button class="m-back" id="m-back">${icon('reply',20)}</button><div class="m-ttl"><b>${esc(title)}</b></div>`}
+      <div class="m-actions">
+        <button class="m-ico" id="m-search">${icon('inbox',20)}</button>
+        <button class="m-ico" id="m-bell">${icon('bell',20)}<span class="ibadge" id="top-bell-badge" style="display:none"></span></button>
+      </div>
+    </header>
+    <div class="m-content" id="content"></div>
+    <nav class="m-tabs">
+      ${M_TABS.map(t=>{
+        const active = t[0]==="__more" ? false : (view===t[0] || (t[0]==="home"&&onHome));
+        const b = t[0]==="__more"?0:mBadge(t[0]);
+        return `<button class="${active?'active':''}" data-mtab="${t[0]}"><span class="mt-ic">${icon(t[2],22)}${b>0?`<span class="mt-badge">${b>9?'9+':b}</span>`:""}</span><i>${t[1]}</i></button>`;
+      }).join("")}
+    </nav>
+  </div>`;
+  el("m-search").onclick=openCmdK;
+  el("m-bell").onclick=()=>{ view="notifications"; render(); };
+  const back=el("m-back"); if(back) back.onclick=()=>{ view="home"; render(); };
+  document.querySelectorAll("[data-mtab]").forEach(b=> b.onclick=()=>{ const v=b.dataset.mtab; if(v==="__more"){ openMobileMenu(); } else { view=v; render(); } });
+  // contenu : accueil = tuiles, sinon la vue normale
+  if(onHome){ el("content").innerHTML=vMobileHome(); bindMobileHome(); updateBadges(); }
+  else { renderMain(); }
+  // maj cloche
+  const tb=el("top-bell-badge"); if(tb){ const n=computeNotifications().length; if(n>0){ tb.textContent=n; tb.style.display=""; } else tb.style.display="none"; }
+}
+function vMobileHome(){
+  const hour=new Date().getHours();
+  const greet = hour<12?"Bonjour":hour<18?"Bon après-midi":"Bonsoir";
+  const myTasks=wsTasks.filter(t=>t.assignee===session.userId && t.status!=="done").length;
+  const unread=unreadCount(); const mails=emailUnreadCount();
+  return `
+  <div class="m-hero">
+    <div class="m-hi">${greet},</div>
+    <div class="m-name">${esc(session.name.split(" ")[0])}</div>
+    <div class="m-quick">
+      <div class="m-qchip" data-mgo="tasks"><b>${myTasks}</b><span>tâches</span></div>
+      <div class="m-qchip" data-mgo="messages"><b>${unread}</b><span>messages</span></div>
+      <div class="m-qchip" data-mgo="email"><b>${mails}</b><span>emails</span></div>
+    </div>
+  </div>
+  <div class="m-grid">
+    ${M_TILES.map(t=>{ const b=mBadge(t[0]); return `<button class="m-tile" data-mgo="${t[0]}"><span class="m-tile-ic">${icon(t[2],26)}${b>0?`<span class="m-tile-badge">${b>9?'9+':b}</span>`:""}</span><span class="m-tile-lab">${t[1]}</span></button>`; }).join("")}
+  </div>`;
+}
+function bindMobileHome(){
+  document.querySelectorAll("[data-mgo]").forEach(b=> b.onclick=()=>{ view=b.dataset.mgo; render(); });
+}
+function openMobileMenu(){
+  el("modal").innerHTML=`<div class="m-sheet-bg" id="m-sheet-bg"><div class="m-sheet">
+    <div class="m-sheet-head"><div class="avatar">${initials(session.name)}</div><div style="flex:1"><div style="font-weight:800">${esc(session.name)}</div><div class="muted" style="font-size:12px">${session.role==="admin"?"Administrateur":"Employé"}</div></div><button class="x" onclick="closeModal()">×</button></div>
+    <div class="m-sheet-sec">Mon statut</div>
+    <div class="m-status-row">
+      ${Object.entries(STATUS).map(([k,v])=>`<button class="m-status ${myStatus===k?'on':''}" data-mstatus="${k}"><span class="dot ${k}"></span>${v}</button>`).join("")}
+    </div>
+    <div class="m-sheet-sec">Toutes les sections</div>
+    <div class="m-sheet-list">
+      ${M_TILES.map(t=>{ const b=mBadge(t[0]); return `<button class="m-sheet-item" data-mgo2="${t[0]}">${icon(t[2],18)}<span style="flex:1">${VIEW_TITLES[t[0]]||t[1]}</span>${b>0?`<span class="badge" style="position:static">${b}</span>`:""}</button>`; }).join("")}
+    </div>
+    <div class="m-sheet-sec">Réglages</div>
+    <div class="m-sheet-list">
+      <button class="m-sheet-item" id="m-theme">${theme==='dark'?'☾':'☀'} <span style="flex:1">Mode ${theme==='dark'?'clair':'sombre'}</span></button>
+      <button class="m-sheet-item" id="m-sound">${icon(soundOn?'soundon':'soundoff',18)} <span style="flex:1">Son ${soundOn?'activé':'coupé'}</span></button>
+      <button class="m-sheet-item" id="m-notif">${icon('bell',18)} <span style="flex:1">${notifOn?'Notifications activées':'Activer les notifications'}</span></button>
+      <button class="m-sheet-item" id="m-logout" style="color:var(--rouge)">${icon('x',18)} <span style="flex:1">Déconnexion</span></button>
+    </div>
+  </div></div>`;
+  el("m-sheet-bg").onclick=e=>{ if(e.target.id==="m-sheet-bg") closeModal(); };
+  document.querySelectorAll("[data-mstatus]").forEach(b=> b.onclick=()=>{ myStatus=b.dataset.mstatus; try{localStorage.setItem("distrivia-ws-status",myStatus);}catch(e){} beat(); closeModal(); render(); });
+  document.querySelectorAll("[data-mgo2]").forEach(b=> b.onclick=()=>{ view=b.dataset.mgo2; closeModal(); render(); });
+  el("m-theme").onclick=()=>{ closeModal(); toggleTheme(); };
+  el("m-sound").onclick=()=>{ soundOn=!soundOn; try{localStorage.setItem("distrivia-ws-sound", soundOn?"1":"0");}catch(e){} if(soundOn) playBeep(); closeModal(); render(); };
+  el("m-notif").onclick=()=>{ closeModal(); if(notifOn){ notifOn=false; try{localStorage.setItem("distrivia-ws-notif","0");}catch(e){} } else requestNotifPerm(); };
+  el("m-logout").onclick=()=>{ closeModal(); logout(); };
+}
+// Re-render au changement orientation/taille (bascule mobile <-> bureau)
+let _wasMobile = null;
+window.addEventListener("resize", ()=>{ const m=isMobile(); if(_wasMobile===null) _wasMobile=m; if(m!==_wasMobile){ _wasMobile=m; if(session) render(); } });
+
 /* ============ RECHERCHE GLOBALE (⌘K) ============ */
 function openCmdK(){
   el("modal").innerHTML=`<div class="cmdk-bg" id="cmdk-bg"><div class="cmdk">
@@ -936,7 +1109,7 @@ window.toggleSb=toggleSb;
 function renderMain(){
   const c=el("content"); if(!c) return;
   const t=el("view-title"); if(t) t.textContent=VIEW_TITLES[view]||"";
-  if(view==="home"){ c.innerHTML=vHome(); bindHomeQuick(); }
+  if(view==="home"){ if(isMobile()){ c.innerHTML=vMobileHome(); bindMobileHome(); } else { c.innerHTML=vHome(); bindHomeQuick(); } }
   else if(view==="dashboard"){ c.innerHTML=vDashboard(); }
   else if(view==="wiki"){ c.innerHTML=vWiki(); bindWiki(); }
   else if(view==="crm"){ c.innerHTML=vCRM(); bindCRM(); }
