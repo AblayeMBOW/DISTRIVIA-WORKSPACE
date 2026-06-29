@@ -258,7 +258,7 @@
   .status-menu button{display:flex;align-items:center;gap:9px;width:100%;background:none;border:none;padding:9px 12px;cursor:pointer;font-size:13px;color:var(--anthra);text-align:left;}
   .status-menu button:hover{background:var(--creme);}
 
-  /* ===== Recherche globale (⌘K) ===== */
+  /* ===== Recherche globale (K) ===== */
   .cmdk-bg{position:fixed;inset:0;background:rgba(15,42,74,.45);display:flex;align-items:flex-start;justify-content:center;padding-top:90px;z-index:120;}
   .cmdk{background:#fff;border-radius:14px;width:100%;max-width:560px;box-shadow:var(--ombre2);overflow:hidden;max-height:70vh;display:flex;flex-direction:column;}
   .cmdk-in{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid #eee;}
@@ -590,6 +590,8 @@ let wsApprovals = [];
 let wsAnnouncements = [];
 let wsLeave = [];
 let wsObjectives = [];
+let wsAttendance = [];          // pointages (ws_attendance)
+let wsExpenses = [];            // notes de frais (ws_expenses)
 let wsPresence = {};          // {userId: lastSeenISO}
 let webThreads = [];          // portal_threads : messages/réclamations des clients
 let emailFolder = "inbox";    // inbox | sent | drafts | flagged
@@ -602,7 +604,7 @@ let pendingAttach = null;     // pièce jointe en attente d'envoi
 let myStatus = (function(){ try{ return localStorage.getItem("distrivia-ws-status")||"available"; }catch(e){ return "available"; } })();
 let theme = (function(){ try{ return localStorage.getItem("distrivia-ws-theme")||"light"; }catch(e){ return "light"; } })();
 const STATUS = {available:"Disponible", busy:"Occupé", dnd:"Ne pas déranger", away:"Absent"};
-const REACTIONS = ["👍","❤️","✅","😄","🎉","👏","🙏","🔥"];
+const REACTIONS = ["like","heart","check","star"];
 let currentChannel = "general";
 const CHANNELS = [
   {id:"general", name:"général"},
@@ -643,6 +645,13 @@ function icon(name, size){
     settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 0 1-4 0v-.1A1.6 1.6 0 0 0 7 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H1a2 2 0 0 1 0-4h.1A1.6 1.6 0 0 0 2.6 7a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H7a1.6 1.6 0 0 0 1-1.5V1a2 2 0 0 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1 1.6 1.6 0 0 0 .3-1.8l-.1-.1"/>',
     soundon:'<path d="M11 5L6 9H2v6h4l5 4V5zM15.5 8.5a5 5 0 0 1 0 7M19 5a9 9 0 0 1 0 14"/>',
     soundoff:'<path d="M11 5L6 9H2v6h4l5 4V5zM22 9l-6 6M16 9l6 6"/>',
+    moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>',
+    sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.4 1.4M17.6 17.6L19 19M19 5l-1.4 1.4M6.4 17.6L5 19"/>',
+    like:'<path d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1zM7 11l4-8a2 2 0 0 1 2 2v4h5.4a2 2 0 0 1 2 2.4l-1.4 6A2 2 0 0 1 17 20H7"/>',
+    heart:'<path d="M12 20s-7-4.6-7-9.6A3.8 3.8 0 0 1 12 7a3.8 3.8 0 0 1 7 3.4c0 5-7 9.6-7 9.6z"/>',
+    star:'<path d="M12 3l2.6 5.6 6 .7-4.4 4.1 1.2 6L12 16.9 6.6 19.4l1.2-6L3.4 9.3l6-.7z"/>',
+    timeclock:'<circle cx="12" cy="13" r="7"/><path d="M12 10v3l2.5 1.5M9 3h6M12 3v3"/>',
+    receipt:'<path d="M5 3h14v18l-2.3-1.5L14.3 21 12 19.5 9.7 21 7.3 19.5 5 21z"/><path d="M8.5 8h7M8.5 11.5h7M8.5 15h4"/>',
   };
   return `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle">${P[name]||""}</svg>`;
 }
@@ -720,6 +729,8 @@ function attachListeners(){
   listenWs("ws_announcements", rows=>{ wsAnnouncements=rows; if(["announcements","home","meeting","calendar","wiki","crm","deliveries"].includes(view)) renderMain(); updateBadges(); });
   listenWs("ws_leave", rows=>{ wsLeave=rows; if(view==="leave"||view==="home"||view==="calendar") renderMain(); updateBadges(); });
   listenWs("ws_objectives", rows=>{ wsObjectives=rows; if(view==="objectives"||view==="home") renderMain(); });
+  listenWs("ws_attendance", rows=>{ wsAttendance=rows; if(view==="attendance"||view==="home"||view==="team") renderMain(); });
+  listenWs("ws_expenses", rows=>{ wsExpenses=rows; if(view==="expenses"||view==="home") renderMain(); updateBadges(); });
   listenWs("ws_presence", rows=>{ wsPresence={}; rows.forEach(r=>wsPresence[r.userId]={at:r.at,status:r.status||"available"}); if(view==="team"||view==="messages") renderMain(); });
   // Messages / réclamations clients venant du portail (portal_threads)
   let firstThreads=true;
@@ -864,6 +875,7 @@ function updateBadges(){
   set("approvals", pendingApprovals());
   set("clients", webThreads.filter(t=>t.unreadForAdmin).length);
   const urgent = computeNotifications().filter(x=>x.urgent).length;
+  set("expenses", isAdmin()?pendingExpenses():0);
   set("notifications", urgent);
   const tb=el("top-bell-badge"); if(tb){ const n=computeNotifications().length; if(n>0){ tb.textContent=n; tb.style.display=""; } else tb.style.display="none"; }
 }
@@ -886,10 +898,12 @@ const NAV = [
   ["objectives","Objectifs","target"],
   ["performance","Performance","target"],
   ["leave","Congés","leave"],
+  ["attendance","Pointage","timeclock"],
+  ["expenses","Notes de frais","receipt"],
   ["team","Annuaire","users"],
   ["notifications","Notifications","bell"],
 ];
-const VIEW_TITLES = {home:"Accueil",dashboard:"Tableau de bord analytique",messages:"Messagerie d'équipe",email:"Email",clients:"Messages clients",crm:"Relances clients (CRM)",meeting:"Salle de réunion",tasks:"Tâches",deliveries:"Suivi des livraisons",calendar:"Calendrier d'équipe",wiki:"Base de connaissances",approvals:"Validations & approbations",announcements:"Annonces internes",objectives:"Objectifs d'équipe",performance:"Performance de l'équipe",leave:"Congés & absences",team:"Annuaire de l'équipe",notifications:"Notifications"};
+const VIEW_TITLES = {home:"Accueil",dashboard:"Tableau de bord analytique",messages:"Messagerie d'équipe",email:"Email",clients:"Messages clients",crm:"Relances clients (CRM)",meeting:"Salle de réunion",tasks:"Tâches",deliveries:"Suivi des livraisons",calendar:"Calendrier d'équipe",wiki:"Base de connaissances",approvals:"Validations & approbations",announcements:"Annonces internes",objectives:"Objectifs d'équipe",performance:"Performance de l'équipe",leave:"Congés & absences",attendance:"Pointage & présence",expenses:"Notes de frais",team:"Annuaire de l'équipe",notifications:"Notifications"};
 
 function isMobile(){ return window.matchMedia && window.matchMedia("(max-width: 760px)").matches; }
 let mNavTab = "home";          // onglet actif de la barre du bas
@@ -923,7 +937,7 @@ function render(){
         <h2 id="view-title">${VIEW_TITLES[view]||""}</h2>
         <div class="search-fake" id="cmdk-open">${icon('inbox',15)} Rechercher… <kbd>Ctrl K</kbd></div>
         <div class="sp"></div>
-        <button class="theme-toggle" id="theme-toggle" title="Mode clair / sombre" style="font-size:18px">${theme==='dark'?'☾':'☀'}</button>
+        <button class="theme-toggle" id="theme-toggle" title="Mode clair / sombre" style="font-size:18px">${icon(theme==='dark'?'moon':'sun',18)}</button>
         <button class="icon-btn" id="top-bell" title="Notifications" onclick="goView('notifications')">${icon('bell',20)}<span class="ibadge" id="top-bell-badge" style="display:none"></span></button>
         <div class="avatar sm" title="${esc(session.name)}">${initials(session.name)}</div>
       </div>
@@ -945,7 +959,7 @@ function render(){
   document.addEventListener("click", ()=>{ const m=el("status-menu"); if(m) m.style.display="none"; const rp=document.querySelector(".react-pop"); if(rp) rp.remove(); }, {once:true});
   // thème
   const tt=el("theme-toggle"); if(tt) tt.onclick=toggleTheme;
-  // recherche ⌘K
+  // recherche K
   const ck=el("cmdk-open"); if(ck) ck.onclick=openCmdK;
   renderMain();
   updateBadges();
@@ -963,6 +977,7 @@ const M_TILES = [
   ["tasks","Tâches","task"],["deliveries","Livraisons","box"],["calendar","Calendrier","clock"],
   ["wiki","Connaissances","megaphone"],["approvals","Validations","approve"],["announcements","Annonces","megaphone"],
   ["objectives","Objectifs","target"],["performance","Performance","target"],["leave","Congés","leave"],
+  ["attendance","Pointage","timeclock"],["expenses","Notes de frais","receipt"],
   ["team","Annuaire","users"],["notifications","Notifications","bell"]
 ];
 function mBadge(v){
@@ -971,6 +986,7 @@ function mBadge(v){
   if(v==="tasks") return myTasksTodo();
   if(v==="clients") return webThreads.filter(t=>t.unreadForAdmin).length;
   if(v==="approvals") return pendingApprovals();
+  if(v==="expenses") return isAdmin()?pendingExpenses():0;
   if(v==="notifications") return computeNotifications().filter(x=>x.urgent).length;
   return 0;
 }
@@ -1043,7 +1059,7 @@ function openMobileMenu(){
     </div>
     <div class="m-sheet-sec">Réglages</div>
     <div class="m-sheet-list">
-      <button class="m-sheet-item" id="m-theme">${theme==='dark'?'☾':'☀'} <span style="flex:1">Mode ${theme==='dark'?'clair':'sombre'}</span></button>
+      <button class="m-sheet-item" id="m-theme">${icon(theme==='dark'?'moon':'sun',18)} <span style="flex:1">Mode ${theme==='dark'?'clair':'sombre'}</span></button>
       <button class="m-sheet-item" id="m-sound">${icon(soundOn?'soundon':'soundoff',18)} <span style="flex:1">Son ${soundOn?'activé':'coupé'}</span></button>
       <button class="m-sheet-item" id="m-notif">${icon('bell',18)} <span style="flex:1">${notifOn?'Notifications activées':'Activer les notifications'}</span></button>
       <button class="m-sheet-item" id="m-logout" style="color:var(--rouge)">${icon('x',18)} <span style="flex:1">Déconnexion</span></button>
@@ -1061,7 +1077,7 @@ function openMobileMenu(){
 let _wasMobile = null;
 window.addEventListener("resize", ()=>{ const m=isMobile(); if(_wasMobile===null) _wasMobile=m; if(m!==_wasMobile){ _wasMobile=m; if(session) render(); } });
 
-/* ============ RECHERCHE GLOBALE (⌘K) ============ */
+/* ============ RECHERCHE GLOBALE (K) ============ */
 function openCmdK(){
   el("modal").innerHTML=`<div class="cmdk-bg" id="cmdk-bg"><div class="cmdk">
     <div class="cmdk-in">${icon('inbox',18)}<input id="cmdk-input" placeholder="Rechercher messages, tâches, clients, collègues…" autocomplete="off"></div>
@@ -1125,6 +1141,8 @@ function renderMain(){
   else if(view==="announcements"){ c.innerHTML=vAnnouncements(); bindAnnouncements(); }
   else if(view==="objectives"){ c.innerHTML=vObjectives(); bindObjectives(); }
   else if(view==="leave"){ c.innerHTML=vLeave(); bindLeave(); }
+  else if(view==="attendance"){ c.innerHTML=vAttendance(); bindAttendance(); }
+  else if(view==="expenses"){ c.innerHTML=vExpenses(); bindExpenses(); }
   else if(view==="team"){ c.innerHTML=vTeam(); }
   else if(view==="notifications") c.innerHTML=vNotifications();
   updateBadges();
@@ -1169,7 +1187,7 @@ function vHome(){
           const late = tk.due && tk.due<today();
           return `<div style="display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid #f1ede2">
             <span class="pill ${tk.priority||'low'}">${prioLabel(tk.priority)}</span>
-            <div style="flex:1"><div style="font-weight:600;font-size:13.5px">${esc(tk.title)}</div>${tk.due?`<div class="due ${late?'late':''}" style="font-size:11px;color:${late?'var(--rouge)':'var(--gris)'}">${late?'⏰ en retard — ':''}échéance ${frDate(tk.due)}</div>`:""}</div>
+            <div style="flex:1"><div style="font-weight:600;font-size:13.5px">${esc(tk.title)}</div>${tk.due?`<div class="due ${late?'late':''}" style="font-size:11px;color:${late?'var(--rouge)':'var(--gris)'}">${late?'en retard — ':''}échéance ${frDate(tk.due)}</div>`:""}</div>
           </div>`;
         }).join("") : `<p class="empty">Aucune tâche en cours.</p>`}
         ${myTasks.length?`<button class="btn ghost sm full" style="margin-top:10px" onclick="goView('tasks')">Voir toutes mes tâches</button>`:""}
@@ -1303,7 +1321,7 @@ function pollHTML(m){
 }
 function reactionsHTML(m){
   const r=m.reactions||{}; const keys=Object.keys(r).filter(k=>(r[k]||[]).length);
-  const chips = keys.map(emo=>{ const arr=r[emo]||[]; const mine=arr.includes(session.userId); return `<span class="react-chip ${mine?'mine':''}" data-react="${m.id||m._id}|${emo}" title="${arr.map(id=>userName(id)).join(", ")}">${emo} ${arr.length}</span>`; }).join("");
+  const chips = keys.map(emo=>{ const arr=r[emo]||[]; const mine=arr.includes(session.userId); return `<span class="react-chip ${mine?'mine':''}" data-react="${m.id||m._id}|${emo}" title="${arr.map(id=>userName(id)).join(", ")}">${reactGlyph(emo)} ${arr.length}</span>`; }).join("");
   return `<div class="reactions">${chips}<span class="react-add" data-reactadd="${m.id||m._id}" title="Réagir">${icon('plus',13)}</span></div>`;
 }
 function renderChatBody(){
@@ -1348,7 +1366,7 @@ function openLightbox(src){
 function openReactPop(anchor, msgId){
   const ex=document.querySelector(".react-pop"); if(ex) ex.remove();
   const pop=document.createElement("div"); pop.className="react-pop";
-  pop.innerHTML=REACTIONS.map(e=>`<span data-e="${e}">${e}</span>`).join("");
+  pop.innerHTML=REACTIONS.map(e=>`<span data-e="${e}">${reactGlyph(e)}</span>`).join("");
   document.body.appendChild(pop);
   const r=anchor.getBoundingClientRect();
   pop.style.top=(r.top-46+window.scrollY)+"px"; pop.style.left=Math.max(8,r.left-60)+"px";
@@ -1865,7 +1883,7 @@ function taskCard(tk){
     <div class="me">
       <span class="avatar sm" title="${esc(userName(tk.assignee))}">${initials(userName(tk.assignee))}</span>
       <span class="pill ${tk.priority||'low'}">${prioLabel(tk.priority)}</span>
-      ${tk.due?`<span class="due ${late?'late':soon?'soon':''}">${late?'⏰ ':''}${frDate(tk.due)}</span>`:""}
+      ${tk.due?`<span class="due ${late?'late':soon?'soon':''}">${late?'':''}${frDate(tk.due)}</span>`:""}
       ${tk.linkOrder?`<span class="muted" style="font-size:11px">${icon("box",12)} ${esc(tk.linkOrder)}</span>`:""}
       ${(tk.subtasks&&tk.subtasks.length)?`<span class="muted" style="font-size:11px">${icon("check",12)} ${tk.subtasks.filter(s=>s.done).length}/${tk.subtasks.length}</span>`:""}
       ${(tk.comments&&tk.comments.length)?`<span class="muted" style="font-size:11px">${icon("chat",12)} ${tk.comments.length}</span>`:""}
@@ -2143,11 +2161,154 @@ function openDM(id){ view="messages"; dmWith=id; render(); }
 window.openDM=openDM;
 
 /* ============ NOTIFICATIONS ============ */
+/* ============ Réactions — glyphes monochromes (look corporate, sans emoji) ============ */
+const REACT_ICON = { like:icon('like',15), heart:icon('heart',15), check:icon('check',15), star:icon('star',15) };
+function reactGlyph(k){ return REACT_ICON[k] || esc(k); }
+function wsStat(v,l){ return '<div style="background:var(--creme);border:1px solid #E8E2D4;border-radius:12px;padding:10px 16px;min-width:118px;text-align:center"><div style="font-size:18px;font-weight:800;color:var(--bleu)">'+v+'</div><div class="muted" style="font-size:12px">'+l+'</div></div>'; }
+
+/* ============ POINTAGE & PRÉSENCE ============ */
+function attMonday(d){ const x=new Date(d); const day=(x.getDay()+6)%7; x.setDate(x.getDate()-day); x.setHours(0,0,0,0); return x; }
+function attDur(rec){ if(!rec.in) return 0; const end=rec.out?new Date(rec.out):new Date(); return Math.max(0,(end-new Date(rec.in))/3600000); }
+function fmtHM(h){ const m=Math.round(h*60); return Math.floor(m/60)+" h "+String(m%60).padStart(2,"0"); }
+function hhmm(iso){ if(!iso) return "—"; const d=new Date(iso); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
+function myOpenAtt(){ return wsAttendance.find(r=>r.userId===session.userId && r.date===today() && !r.out); }
+function attTodayHours(userId){ return wsAttendance.filter(r=>r.userId===userId && r.date===today()).reduce((a,r)=>a+attDur(r),0); }
+function attWeekHours(userId){ const mon=attMonday(new Date()); return wsAttendance.filter(r=>r.userId===userId && new Date(r.date)>=mon).reduce((a,r)=>a+attDur(r),0); }
+
+function vAttendance(){
+  const open=myOpenAtt();
+  const presentNow=wsAttendance.filter(r=>r.date===today() && !r.out);
+  const mine=wsAttendance.filter(r=>r.userId===session.userId).sort((a,b)=>a.in<b.in?1:-1).slice(0,14);
+  let adminBlock="";
+  if(isAdmin()){
+    const mon=attMonday(new Date()); const byUser={};
+    wsAttendance.filter(r=>new Date(r.date)>=mon).forEach(r=>{ byUser[r.userId]=(byUser[r.userId]||0)+attDur(r); });
+    const ids=Object.keys(byUser).sort((a,b)=>byUser[b]-byUser[a]);
+    adminBlock=`<div class="panel"><h3>Récapitulatif de la semaine (équipe)</h3>
+      ${ids.length?`<div class="tablewrap"><table><tr><th>Employé</th><th>Heures cette semaine</th><th>Présence</th></tr>
+        ${ids.map(id=>`<tr><td><b>${esc(userName(id))}</b></td><td>${fmtHM(byUser[id])}</td><td>${presentNow.some(p=>p.userId===id)?'<span class="pill approved">Présent</span>':'<span class="muted">—</span>'}</td></tr>`).join("")}
+      </table></div>`:`<p class="empty">Aucun pointage cette semaine.</p>`}
+    </div>`;
+  }
+  return `
+  <div class="panel" style="text-align:center">
+    <div class="muted" style="font-size:13px;margin-bottom:8px">${open?("Arrivée pointée à "+hhmm(open.in)):"Vous n'avez pas encore pointé aujourd'hui"}</div>
+    <button class="btn ${open?'r':'b'}" id="att-toggle" style="font-size:15px;padding:12px 28px">${icon('timeclock',18)} ${open?"Pointer mon départ":"Pointer mon arrivée"}</button>
+    <div class="row" style="justify-content:center;gap:14px;margin-top:18px">
+      ${wsStat(fmtHM(attTodayHours(session.userId)),"aujourd'hui")}
+      ${wsStat(fmtHM(attWeekHours(session.userId)),"cette semaine")}
+    </div>
+  </div>
+  <div class="panel"><h3>Présents en ce moment (${presentNow.length})</h3>
+    ${presentNow.length?`<div class="row" style="flex-wrap:wrap;gap:10px">${presentNow.map(p=>`<div class="row" style="gap:8px;background:var(--creme);padding:6px 12px;border-radius:20px"><div class="avatar" style="width:26px;height:26px;font-size:11px">${initials(p.name||userName(p.userId))}</div><span>${esc(p.name||userName(p.userId))}</span><span class="muted" style="font-size:12px">depuis ${hhmm(p.in)}</span></div>`).join("")}</div>`:`<p class="empty">Personne n'est pointé actuellement.</p>`}
+  </div>
+  <div class="panel"><h3>Mon historique</h3>
+    ${mine.length?`<div class="tablewrap"><table><tr><th>Date</th><th>Arrivée</th><th>Départ</th><th>Durée</th></tr>
+      ${mine.map(r=>`<tr><td>${frDate(r.date)}</td><td>${hhmm(r.in)}</td><td>${r.out?hhmm(r.out):'<span class="pill pending">en cours</span>'}</td><td>${fmtHM(attDur(r))}</td></tr>`).join("")}
+    </table></div>`:`<p class="empty">Aucun pointage enregistré.</p>`}
+  </div>
+  ${adminBlock}`;
+}
+function bindAttendance(){
+  const t=el("att-toggle");
+  if(t) t.onclick=async ()=>{
+    const open=myOpenAtt();
+    if(open){ await wsUpdate("ws_attendance", open._id||open.id, {out:nowISO()}); toast("Départ pointé ✓"); }
+    else { await wsAdd("ws_attendance", {id:uid(), userId:session.userId, name:session.name, date:today(), in:nowISO(), out:null}); toast("Arrivée pointée ✓"); }
+  };
+}
+
+/* ============ NOTES DE FRAIS ============ */
+let expFilter = "me";
+const EXP_CATS = ["Transport","Carburant","Restauration","Fournitures","Hébergement","Autre"];
+function pendingExpenses(){ return wsExpenses.filter(e=>e.status==="pending").length; }
+function expStatus(s){ return {pending:"En attente",approved:"Approuvée",rejected:"Refusée"}[s]||s; }
+
+function vExpenses(){
+  const list=wsExpenses.filter(e=> expFilter==="me" ? e.userId===session.userId : expFilter==="pending" ? e.status==="pending" : true)
+    .sort((a,b)=>a.created<b.created?1:-1);
+  const myApproved=wsExpenses.filter(e=>e.userId===session.userId && e.status==="approved").reduce((a,e)=>a+(+e.amount||0),0);
+  const myPending=wsExpenses.filter(e=>e.userId===session.userId && e.status==="pending").reduce((a,e)=>a+(+e.amount||0),0);
+  let adminBlock="";
+  if(isAdmin()){
+    const sum=st=>wsExpenses.filter(e=>e.status===st).reduce((a,e)=>a+(+e.amount||0),0);
+    adminBlock=`<div class="row" style="gap:12px;flex-wrap:wrap;margin-bottom:14px">
+      ${wsStat(moneyF(sum("pending"))+" F","En attente")}
+      ${wsStat(moneyF(sum("approved"))+" F","Approuvées")}
+      ${wsStat(String(pendingExpenses()),"À traiter")}
+    </div>`;
+  }
+  return `
+  ${adminBlock}
+  <div class="row" style="justify-content:space-between;margin-bottom:14px">
+    <div class="row">
+      <button class="btn sm ${expFilter==='me'?'':'ghost'}" data-ef="me">Mes notes</button>
+      ${isAdmin()?`<button class="btn sm ${expFilter==='pending'?'':'ghost'}" data-ef="pending">À traiter (${pendingExpenses()})</button><button class="btn sm ${expFilter==='all'?'':'ghost'}" data-ef="all">Tout</button>`:""}
+    </div>
+    <button class="btn b" id="exp-new">+ Nouvelle note de frais</button>
+  </div>
+  ${expFilter==='me'?`<div class="row" style="gap:12px;flex-wrap:wrap;margin-bottom:14px">${wsStat(moneyF(myPending)+" F","Mes notes en attente")}${wsStat(moneyF(myApproved)+" F","Remboursé / approuvé")}</div>`:""}
+  <div class="panel">
+    ${list.length?`<div class="tablewrap"><table>
+      <tr><th>Date</th><th>Catégorie</th><th>Montant</th><th>Description</th>${expFilter!=='me'?'<th>Employé</th>':''}<th>Justif.</th><th>Statut</th><th></th></tr>
+      ${list.map(e=>`<tr>
+        <td>${frDate(e.date)}</td>
+        <td class="muted">${esc(e.category||"—")}</td>
+        <td><b>${moneyF(+e.amount||0)} F</b></td>
+        <td>${esc(e.desc||"")}</td>
+        ${expFilter!=='me'?`<td>${esc(userName(e.userId))}</td>`:''}
+        <td>${e.receipt?`<button class="btn ghost sm" data-exprec="${e._id}">Voir</button>`:'<span class="muted">—</span>'}</td>
+        <td><span class="pill ${e.status}">${expStatus(e.status)}</span>${e.decidedBy?`<div class="muted" style="font-size:11px">par ${esc(userName(e.decidedBy))}</div>`:""}${e.decisionNote?`<div class="muted" style="font-size:11px">"${esc(e.decisionNote)}"</div>`:""}</td>
+        <td>${e.status==="pending"&&isAdmin()?`<div class="row"><button class="btn v sm" data-expok="${e._id}">${icon("check",14)}</button><button class="btn r sm" data-expno="${e._id}">${icon("x",14)}</button></div>`:(e.status==="pending"&&e.userId===session.userId?`<button class="btn r sm" data-expdel="${e._id}">${icon("x",14)}</button>`:"")}</td>
+      </tr>`).join("")}
+    </table></div>`:`<p class="empty">Aucune note de frais ${expFilter==='pending'?'à traiter':''}.</p>`}
+  </div>`;
+}
+function expenseDialog(){
+  openModal(`<div class="row" style="justify-content:space-between"><h3>Nouvelle note de frais</h3><button class="x" onclick="closeModal()">×</button></div>
+    <div class="grid g2">
+      <div><label>Date</label><input id="ex-date" type="date" value="${today()}"></div>
+      <div><label>Catégorie</label><select id="ex-cat">${EXP_CATS.map(c=>`<option value="${c}">${c}</option>`).join("")}</select></div>
+    </div>
+    <label>Montant (FCFA)</label><input id="ex-amount" type="number" min="0" placeholder="Ex. 15000">
+    <label>Description</label><textarea id="ex-desc" rows="2" placeholder="Objet de la dépense…"></textarea>
+    <label>Justificatif (photo, facultatif)</label><input id="ex-file" type="file" accept="image/*">
+    <div id="ex-fileinfo" class="muted" style="font-size:12px"></div>
+    <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn" id="ex-save">Soumettre</button></div>`);
+  let receipt=null;
+  el("ex-file").onchange=async (ev)=>{ const f=ev.target.files[0]; if(!f) return; if(f.size>2*1024*1024){ toast("Image trop lourde (max 2 Mo)"); ev.target.value=""; return; } receipt=await fileToDataURL(f); el("ex-fileinfo").textContent="Justificatif joint ("+humanSize(f.size)+")"; };
+  el("ex-save").onclick=async ()=>{
+    const amount=+el("ex-amount").value||0; if(amount<=0) return toast("Montant requis");
+    await wsAdd("ws_expenses", {id:uid(), userId:session.userId, name:session.name, date:el("ex-date").value||today(), category:el("ex-cat").value, amount, desc:el("ex-desc").value.trim(), receipt, status:"pending", created:nowISO()});
+    closeModal(); toast("Note de frais soumise ✓");
+  };
+}
+async function decideExpense(id, decision){
+  const e=wsExpenses.find(x=>x._id===id); if(!e) return;
+  if(decision==="rejected"){
+    openModal(`<h3>Refuser la note de frais</h3><p class="muted" style="margin:8px 0">${esc(e.category)} · ${moneyF(+e.amount||0)} F</p><label>Motif (facultatif)</label><input id="exd-note" placeholder="Raison du refus…">
+      <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn ghost" onclick="closeModal()">Annuler</button><button class="btn r" id="exd-ok">Refuser</button></div>`);
+    el("exd-ok").onclick=async ()=>{ await wsUpdate("ws_expenses", id, {status:"rejected", decidedBy:session.userId, decisionNote:el("exd-note").value.trim(), decidedAt:nowISO()}); closeModal(); toast("Note refusée"); };
+  } else {
+    await wsUpdate("ws_expenses", id, {status:"approved", decidedBy:session.userId, decidedAt:nowISO()}); toast("Note approuvée ✓");
+  }
+}
+window.decideExpense=decideExpense;
+function viewReceipt(id){ const e=wsExpenses.find(x=>x._id===id); if(!e||!e.receipt) return; el("modal").innerHTML=`<div class="modalbg" id="rc-bg" style="background:rgba(10,18,30,.9)"><img src="${e.receipt}" style="max-width:94vw;max-height:90vh;border-radius:10px"><button class="x" style="position:absolute;top:18px;right:22px;color:#fff;font-size:34px" onclick="closeModal()">×</button></div>`; el("rc-bg").onclick=ev=>{ if(ev.target.id==="rc-bg") closeModal(); }; }
+function bindExpenses(){
+  document.querySelectorAll("[data-ef]").forEach(b=> b.onclick=()=>{ expFilter=b.dataset.ef; renderMain(); });
+  const nw=el("exp-new"); if(nw) nw.onclick=expenseDialog;
+  document.querySelectorAll("[data-expok]").forEach(b=> b.onclick=()=>decideExpense(b.dataset.expok,"approved"));
+  document.querySelectorAll("[data-expno]").forEach(b=> b.onclick=()=>decideExpense(b.dataset.expno,"rejected"));
+  document.querySelectorAll("[data-exprec]").forEach(b=> b.onclick=()=>viewReceipt(b.dataset.exprec));
+  document.querySelectorAll("[data-expdel]").forEach(b=> b.onclick=()=> confirmDialog("Supprimer cette note de frais ?", async ()=>{ await wsDelete("ws_expenses", b.dataset.expdel); toast("Note supprimée"); }, {danger:true, ok:"Supprimer"}));
+}
+
 function vNotifications(){
   const notifs=computeNotifications();
   return `<div class="panel"><h3>${icon("bell")} Centre de notifications</h3>
     <p class="muted" style="font-size:13px;margin-bottom:12px">Alertes générées automatiquement depuis vos données DISTRIVIA Gestion (stock, factures, tâches).</p>
-    ${notifs.length? notifs.map(n=>`<div class="notif-item ${n.urgent?'urgent':''}"><div class="ic">${n.ic}</div><div class="tx">${n.txt}</div>${n.urgent?'<span class="pill high">Urgent</span>':""}</div>`).join("") : `<p class="empty">✅ Tout est sous contrôle, aucune alerte.</p>`}
+    ${notifs.length? notifs.map(n=>`<div class="notif-item ${n.urgent?'urgent':''}"><div class="ic">${n.ic}</div><div class="tx">${n.txt}</div>${n.urgent?'<span class="pill high">Urgent</span>':""}</div>`).join("") : `<p class="empty">Tout est sous contrôle, aucune alerte.</p>`}
   </div>
   <p class="muted" style="font-size:12px">Ces alertes se mettent à jour automatiquement. Connectez-vous régulièrement pour rester informé.</p>`;
 }
@@ -2307,7 +2468,7 @@ function vDashboard(){
       ${impaye>0? `<div class="donut-wrap">${donutSVG([["0-15 j",aging["0-15 j"],"#2E6B3E"],["15-30 j",aging["15-30 j"],"#C9962B"],["+30 j",aging["+30 j"],"#A33B3B"]])}
         <div class="donut-leg">
           ${[["0-15 j","#2E6B3E"],["15-30 j","#C9962B"],["+30 j","#A33B3B"]].map(([k,c])=>`<div class="dl"><span class="sw" style="background:${c}"></span>${k} : <b style="margin-left:4px">${moneyF(aging[k])} F</b></div>`).join("")}
-        </div></div>` : `<p class="empty">Aucun impayé. Trésorerie saine 👍</p>`}
+        </div></div>` : `<p class="empty">Aucun impayé. Trésorerie saine </p>`}
     </div>
     <div class="panel">
       <h3>${icon('box',16)} Top 5 produits (par CA)</h3>
